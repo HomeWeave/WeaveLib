@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Thread, RLock, Event
 from uuid import uuid4
 
-from app.core.messaging import Sender, Receiver, Creator
-from app.core.rpc.api import API, ArgParameter, KeywordParameter
+from weavelib.messaging import Sender, Receiver, Creator
+from .api import API, ArgParameter, KeywordParameter
 
 
 logger = logging.getLogger(__name__)
