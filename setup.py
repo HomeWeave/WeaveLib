@@ -13,7 +13,8 @@ setup(
     description='Library to interact with Weave Server',
     long_description=open('README.md').read(),
     install_requires=[
-        'jsonschema'
+        'jsonschema',
+        'netifaces'
     ],
     tests_requires=[
         'pytest'
