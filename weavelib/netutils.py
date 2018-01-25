@@ -2,6 +2,7 @@ import logging
 import re
 import socket
 from subprocess import Popen, PIPE, DEVNULL
+from sys import platform
 
 import netifaces
 
@@ -17,7 +18,14 @@ def get_mac_address(host):
     except socket.error:
         pass
 
-    with Popen(["arp", "-a", host], stdout=PIPE) as proc:
+    if "linux" in platform:
+        command = ["arp", "-a", host]
+    elif "darwin" in platform:
+        command = ["arp", host]
+    else:
+        raise Exception("Unsupported platform.")
+
+    with Popen(command, stdout=PIPE) as proc:
         for line in proc.stdout:
             line = line.decode("UTF-8")
             if host in line:
