@@ -85,8 +85,6 @@ class BackgroundThreadServiceStart(object):
 
 
 class BackgroundProcessServiceStart(object):
-    SERVICE_BASE_PKG = "app.services"
-
     def service_start(self):
         self.started_event = threading.Event()
         self.child_thread = threading.Thread(target=self.child_process)
@@ -102,8 +100,7 @@ class BackgroundProcessServiceStart(object):
             psutil.Process(self.service_pid).kill()
 
     def child_process(self):
-        comp_name = self.get_component_name()
-        name = self.SERVICE_BASE_PKG + "." + comp_name
+        name = self.get_component_name()
         command = [sys.executable, "app.py", "launch-service", name]
         self.service_proc = subprocess.Popen(command, env=os.environ.copy(),
                                              stdout=subprocess.PIPE,
@@ -111,7 +108,7 @@ class BackgroundProcessServiceStart(object):
         self.service_pid = self.service_proc.pid
         for line in iter(self.service_proc.stdout.readline, b''):
             content = line.strip().decode()
-            if "SERVICE-STARTED-" + comp_name in content:
+            if "SERVICE-STARTED-" + name in content:
                 self.started_event.set()
             else:
                 logger.info("[%s]: %s", name, content)
