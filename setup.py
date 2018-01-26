@@ -8,7 +8,12 @@ setup(
     version='0.8',
     author='Srivatsan Iyer',
     author_email='supersaiyanmode.rox@gmail.com',
-    packages=['weavelib'],
+    packages=[
+        'weavelib'
+        'weavelib.rpc'
+        'weavelib.messaging'
+        'weavelib.services'
+    ],
     license='MIT',
     description='Library to interact with Weave Server',
     long_description=open('README.md').read(),
