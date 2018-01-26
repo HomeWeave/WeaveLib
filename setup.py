@@ -9,9 +9,9 @@ setup(
     author='Srivatsan Iyer',
     author_email='supersaiyanmode.rox@gmail.com',
     packages=[
-        'weavelib'
-        'weavelib.rpc'
-        'weavelib.messaging'
+        'weavelib',
+        'weavelib.rpc',
+        'weavelib.messaging',
         'weavelib.services'
     ],
     license='MIT',
