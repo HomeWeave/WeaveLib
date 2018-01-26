@@ -1,7 +1,7 @@
 import pytest
 from jsonschema import validate
 
-from app.core.rpc.api import API, ArgParameter, KeywordParameter
+from weavelib.rpc import API, ArgParameter, KeywordParameter
 
 
 class TestParameter(object):

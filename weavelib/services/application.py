@@ -1,7 +1,7 @@
 from threading import RLock
 from uuid import uuid4
 
-from app.core.messaging import Sender
+from weavelib.messaging import Sender
 
 
 class Application(object):

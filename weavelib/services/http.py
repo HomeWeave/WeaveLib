@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from flask import Flask, redirect
 
-import app.core.netutils as netutils
+import weavelib.netutils as netutils
 
 logger = logging.getLogger(__name__)
 
