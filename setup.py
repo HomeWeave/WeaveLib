@@ -19,7 +19,8 @@ setup(
     long_description=open('README.md').read(),
     install_requires=[
         'jsonschema',
-        'netifaces'
+        'netifaces',
+        'psutil'
     ],
     tests_requires=[
         'pytest'
