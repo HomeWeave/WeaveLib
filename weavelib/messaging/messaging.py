@@ -121,7 +121,8 @@ def write_message(conn, msg):
 def raise_message_exception(err, extra):
     known_exceptions = {
         InvalidMessageStructure, BadOperation, RequiredFieldsMissing,
-        QueueNotFound, SchemaValidationFailed, QueueAlreadyExists
+        QueueNotFound, SchemaValidationFailed, QueueAlreadyExists,
+        InternalMessagingError
     }
     responses = {c().err_msg(): c for c in known_exceptions}
     responses["OK"] = None
