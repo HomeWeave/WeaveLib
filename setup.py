@@ -21,8 +21,5 @@ setup(
         'jsonschema',
         'netifaces',
         'psutil'
-    ],
-    tests_requires=[
-        'pytest'
     ]
 )
