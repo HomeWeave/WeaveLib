@@ -109,8 +109,6 @@ class RPCServer(RPC):
         self.receiver.start()
         self.receiver_thread.start()
 
-        self.service.app.register_rpc_server(self)
-
     def stop(self):
         # TODO: Delete the queue, too.
 
