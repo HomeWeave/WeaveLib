@@ -4,26 +4,33 @@ from jsonschema import validate, ValidationError
 
 
 class Parameter(object):
-    def __init__(self, name, desc, cls):
-        if cls not in (str, int, bool):
-            raise ValueError("Unexpected type for parameter.")
+    SIMPLE_TYPE_SCHEMA = {
+        str: {"type": "string"},
+        int: {"type": "number"},
+        bool: {"type": "boolean"}
+    }
 
+    def __init__(self, name, desc, cls_or_schema):
         self.name = name
         self.desc = desc
-        self.cls = cls
-        self.param_type = {str: "text", int: "number", bool: "toggle"}[cls]
-        self.schema_type = {str: "string", int: "number", bool: "boolean"}[cls]
+        if isinstance(cls_or_schema, type):
+            if cls_or_schema not in (str, int, bool):
+                raise ValueError("Unexpected type for parameter.")
+            self.param_schema = self.SIMPLE_TYPE_SCHEMA[cls_or_schema]
+        elif isinstance(cls_or_schema, dict):
+            # TODO: Validate with meta-schema
+            self.param_schema = cls_or_schema
 
     @property
     def schema(self):
-        return {"type": self.schema_type}
+        return self.param_schema
 
     @property
     def info(self):
         return {
             "name": self.name,
             "description": self.desc,
-            "type": self.param_type
+            "schema": self.param_schema
         }
 
 
@@ -33,8 +40,8 @@ class ArgParameter(Parameter):
     @staticmethod
     def from_info(info):
         try:
-            cls = {"text": str, "number": int, "toggle": bool}[info["type"]]
-            return ArgParameter(info["name"], info["description"], cls)
+            return ArgParameter(info["name"], info["description"],
+                                info["schema"])
         except KeyError:
             raise ValueError("Invalid ArgParameter info object.")
 
@@ -45,8 +52,8 @@ class KeywordParameter(Parameter):
     @staticmethod
     def from_info(info):
         try:
-            cls = {"text": str, "number": int, "toggle": bool}[info["type"]]
-            return KeywordParameter(info["name"], info["description"], cls)
+            return KeywordParameter(info["name"], info["description"],
+                                    info["schema"])
         except KeyError:
             raise ValueError("Invalid KeywordParameter info object.")
 

@@ -1,7 +1,8 @@
 import pytest
 from jsonschema import validate
 
-from weavelib.rpc import API, ArgParameter, KeywordParameter
+from weavelib.rpc import ArgParameter, KeywordParameter
+from weavelib.rpc.api import API
 
 
 class TestParameter(object):
@@ -13,19 +14,21 @@ class TestParameter(object):
         assert {"type": "string"} == ArgParameter("", "", str).schema
         assert {"type": "number"} == ArgParameter("", "", int).schema
         assert {"type": "boolean"} == KeywordParameter("", "", bool).schema
+        assert {"type": "object"} == KeywordParameter("", "",
+                                                      {"type": "object"}).schema
 
     def test_info(self):
         assert ArgParameter("a", "b", str).info == {
             "name": "a",
             "description": "b",
-            "type": "text"
+            "schema": {"type": "string"}
         }
 
     def test_arg_parameter_from_info(self):
         obj = {
             "name": "a",
             "description": "b",
-            "type": "text"
+            "schema": {"type": "object"}
         }
         assert ArgParameter.from_info(obj).info == obj
 
