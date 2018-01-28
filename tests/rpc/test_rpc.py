@@ -5,10 +5,11 @@ from threading import Event
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from weaveserver.services import ServiceManager, BaseService
+from weaveserver.core.services import ServiceManager
 
 from weavelib.rpc import RPCClient, RPCServer, ServerAPI
 from weavelib.rpc import ArgParameter, KeywordParameter, RemoteAPIError
+from weavelib.services import BaseService
 
 
 class DummyService(BaseService):
@@ -22,19 +23,17 @@ class DummyService(BaseService):
             ServerAPI("api2", "desc2", [], self.api2),
             ServerAPI("exception", "desc2", [], self.exception)
         ]
-        self.rpc_server = RPCServer("name", "desc", apis, self)
+        self.rpc_server = RPCServer("name", "desc", apis)
         self.paused = False
         super(DummyService, self).__init__()
 
     def api1(self, p1, p2, k3):
         if type(p1) != str or type(p2) != int or type(k3) != bool:
             return "BAD"
-
         if self.paused:
             while self.paused:
                 sleep_time = random.randrange(500, 1500)/1000.0
                 time.sleep(sleep_time)
-
         return "{}{}{}".format(p1, p2, k3)
 
     def api2(self):
@@ -57,8 +56,8 @@ class TestRPC(object):
     @classmethod
     def setup_class(cls):
         os.environ["USE_FAKE_REDIS"] = "TRUE"
-        cls.service_manager = ServiceManager(None)
-        cls.service_manager.start_services(["messaging"])
+        cls.service_manager = ServiceManager()
+        cls.service_manager.start_services(["messaging", "appmanager"])
 
     @classmethod
     def teardown_class(cls):

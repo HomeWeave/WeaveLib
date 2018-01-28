@@ -3,6 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Thread, RLock, Event
 from uuid import uuid4
 
+from jsonschema import Draft4Validator
+
 from weavelib.messaging import Sender, Receiver, Creator
 from .api import API, ArgParameter, KeywordParameter
 
@@ -59,7 +61,12 @@ class RPC(object):
 
     @property
     def request_schema(self):
-        return api_group_schema(self.apis.values())
+        return {
+            "type": "object",
+            "properties": {
+                "invocation": api_group_schema(self.apis.values()),
+            }
+        }
 
     @property
     def response_schema(self):
@@ -74,51 +81,89 @@ class RPCReceiver(Receiver):
     def on_message(self, msg):
         self.component.on_rpc_message(msg)
 
+class RPCSessionizedReceiver(RPCReceiver):
+    def __init__(self, component, queue, cookie, host="localhost"):
+        self.cookie = cookie
+        super(RPCSessionizedReceiver, self).__init__(component, queue, host)
+
+    def receive_headers(self):
+        return {"COOKIE": self.cookie}
+
 
 class RPCServer(RPC):
     MAX_RPC_WORKERS = 5
 
-    def __init__(self, name, description, apis, service):
+    def __init__(self, name, description, apis):
         super(RPCServer, self).__init__(name, description, apis)
-        self.service = service
-        self.unique_id = "rpc-" + str(uuid4())
-        self.queue = service.get_service_queue_name("apis/" + self.unique_id)
-        self.request_queue = self.queue + "/request"
-        self.response_queue = self.queue + "/response"
-
-        self.sender = Sender(self.response_queue)
-        self.receiver = RPCReceiver(self, self.request_queue)
-        self.receiver_thread = Thread(target=self.receiver.run)
-
         self.executor = ThreadPoolExecutor(self.MAX_RPC_WORKERS)
+        self.sender = None
+        self.receiver = None
+        self.receiver_thread = None
+        self.cookie = None
+
+    def register_rpc(self):
+        root_rpc_info = {
+            "name": "",
+            "description": "",
+            "apis": {
+                "dummy": {
+                    "name": "register_rpc",
+                    "description": "",
+                    "args": [
+                        {
+                            "name": "name",
+                            "description": "Name of RPC",
+                            "schema": {"type": "string"}
+                        },
+                        {
+                            "name": "description",
+                            "description": "Description of RPC",
+                            "schema": {"type": "string"}
+                        },
+                        {
+                            "name": "request_schema",
+                            "description": "Request JSONSchema of the RPC",
+                            "schema": Draft4Validator.META_SCHEMA
+                        },
+                        {
+                            "name": "response_schema",
+                            "description": "Response JSONSchema of the RPC",
+                            "schema": Draft4Validator.META_SCHEMA
+                        },
+                    ],
+                }
+            },
+            "request_queue": "/_system/root_rpc/request",
+            "response_queue": "/_system/root_rpc/response"
+        }
+
+        rpc_client = RPCClient(root_rpc_info)
+        rpc_client.start()
+        rpc_info = rpc_client["register_rpc"](self.name, self.description,
+                                              self.request_schema,
+                                              self.response_schema, _block=True)
+        return rpc_info
 
     def start(self):
-        creator = Creator()
-        creator.start()
-        creator.create({
-            "queue_name": self.request_queue,
-            "request_schema": self.request_schema
-        })
-
-        creator.create({
-            "queue_name": self.response_queue,
-            "request_schema": self.response_schema
-        })
+        rpc_info = self.register_rpc()
+        self.sender = Sender(rpc_info["response_queue"])
+        self.receiver = RPCReceiver(self, rpc_info["request_queue"])
 
         self.sender.start()
         self.receiver.start()
+
+        self.receiver_thread = Thread(target=self.receiver.run)
         self.receiver_thread.start()
 
     def stop(self):
         # TODO: Delete the queue, too.
-
         self.receiver.stop()
         self.receiver_thread.join()
 
         self.executor.shutdown()
 
-    def on_rpc_message(self, obj):
-        def make_done_callback(request_id, cmd):
+    def on_rpc_message(self, rpc_obj):
+        def make_done_callback(request_id, cmd, cookie):
             def callback(future):
                 ex = future.exception()
                 if ex:
@@ -127,16 +172,17 @@ class RPCServer(RPC):
                         "id": request_id,
                         "command": cmd,
                         "error": "Internal API Error."
-                    })
+                    }, headers={"COOKIE": cookie})
                     return
 
                 self.sender.send({
                     "id": request_id,
                     "command": cmd,
                     "result": future.result()
-                })
+                }, headers={"COOKIE": cookie})
             return callback
-
+        obj = rpc_obj["invocation"]
+        cookie = rpc_obj["response_cookie"]
         request_id = obj["id"]
         cmd = obj["command"]
         try:
@@ -152,7 +198,7 @@ class RPCServer(RPC):
         args = obj.get("args", [])
         kwargs = obj.get("kwargs", {})
         future = self.executor.submit(api, *args, **kwargs)
-        future.add_done_callback(make_done_callback(request_id, cmd))
+        future.add_done_callback(make_done_callback(request_id, cmd, cookie))
 
     @property
     def info_message(self):
@@ -160,7 +206,8 @@ class RPCServer(RPC):
             "name": self.name,
             "description": self.description,
             "apis": {name: api.info for name, api in self.apis.items()},
-            "uri": self.queue
+            "request_queue": self.receiver.queue,
+            "response_queue": self.sender.queue
         }
 
 
@@ -171,8 +218,10 @@ class RPCClient(RPC):
         apis = [self.get_api_call(x) for x in rpc_info["apis"].values()]
         super(RPCClient, self).__init__(name, description, apis)
 
-        self.sender = Sender(rpc_info["uri"] + "/request")
-        self.receiver = RPCReceiver(self, rpc_info["uri"] + "/response")
+        self.client_cookie = "rpc-client-cookie-" + str(uuid4())
+        self.sender = Sender(rpc_info["request_queue"])
+        self.receiver = RPCSessionizedReceiver(self, rpc_info["response_queue"],
+                                               self.client_cookie)
         self.receiver_thread = Thread(target=self.receiver.run)
 
         self.callbacks = {}
@@ -207,7 +256,10 @@ class RPCClient(RPC):
                 with self.callbacks_lock:
                     self.callbacks[msg_id] = callback
 
-            self.sender.send(obj)
+            self.sender.send({
+                "invocation": obj,
+                "response_cookie": self.client_cookie
+            })
             if not block:
                 return
 
