@@ -280,6 +280,9 @@ class SyncMessenger(object):
         ensure_ok_message(msg)
         return Receiver.receive(self).task
 
+    def receive_headers(self):
+        return {}
+
     def stop(self):
         Receiver.stop(self)
 
