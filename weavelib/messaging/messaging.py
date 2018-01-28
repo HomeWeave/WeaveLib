@@ -230,6 +230,7 @@ class Receiver(object):
 
     def receive(self):
         dequeue_msg = Message("dequeue")
+        dequeue_msg.headers = self.receive_headers()
         dequeue_msg.headers["Q"] = self.queue
         write_message(self.wfile, dequeue_msg)
         msg = read_message(self.rfile)
@@ -251,6 +252,8 @@ class Receiver(object):
     def on_message(self, msg):
         pass
 
+    def receive_headers(self):
+        return {}
 
 class SyncMessenger(object):
     PORT = 11023
