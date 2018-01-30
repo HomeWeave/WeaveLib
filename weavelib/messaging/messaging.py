@@ -242,11 +242,15 @@ class Receiver(object):
 
     def stop(self):
         self.active = False
-        self.sock.shutdown(socket.SHUT_RDWR)
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except Exception:
+            pass
+
         for item in (self.rfile, self.wfile, self.sock):
             try:
                 item.close()
-            except ConnectionError:
+            except Exception:
                 pass
 
     def on_message(self, msg):
@@ -312,8 +316,16 @@ class Creator(object):
         ensure_ok_message(msg)
 
     def close(self):
-        self.sock.shutdown(socket.SHUT_RDWR)
-        self.sock.close()
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except Exception:
+            pass
+
+        for item in (self.rfile, self.wfile, self.sock):
+            try:
+                item.close()
+            except Exception:
+                pass
 
 
 def discover_message_server():
