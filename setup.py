@@ -11,6 +11,7 @@ setup(
     packages=[
         'weavelib',
         'weavelib.rpc',
+        'weavelib.http',
         'weavelib.messaging',
         'weavelib.services'
     ],
