@@ -23,7 +23,7 @@ class DummyService(BaseService):
             ServerAPI("api2", "desc2", [], self.api2),
             ServerAPI("exception", "desc2", [], self.exception)
         ]
-        self.rpc_server = RPCServer("name", "desc", apis)
+        self.rpc_server = RPCServer("name", "desc", apis, self)
         self.paused = False
         super(DummyService, self).__init__()
 
@@ -45,10 +45,10 @@ class DummyService(BaseService):
     def get_service_queue_name(self, path):
         return "/" + path
 
-    def start(self):
+    def on_service_start(self):
         self.rpc_server.start()
 
-    def stop(self):
+    def on_service_stop(self):
         self.rpc_server.stop()
 
 
@@ -66,10 +66,10 @@ class TestRPC(object):
 
     def setup_method(self):
         self.service = DummyService()
-        self.service.start()
+        self.service.service_start()
 
     def teardown_method(self):
-        self.service.stop()
+        self.service.service_stop()
 
     def test_server_function_invoke(self):
         info = self.service.rpc_server.info_message

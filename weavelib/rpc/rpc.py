@@ -93,7 +93,8 @@ class RPCSessionizedReceiver(RPCReceiver):
 class RPCServer(RPC):
     MAX_RPC_WORKERS = 5
 
-    def __init__(self, name, description, apis):
+    def __init__(self, name, description, apis, service):
+        self.service = service
         super(RPCServer, self).__init__(name, description, apis)
         self.executor = ThreadPoolExecutor(self.MAX_RPC_WORKERS)
         self.sender = None
@@ -102,47 +103,9 @@ class RPCServer(RPC):
         self.cookie = None
 
     def register_rpc(self):
-        root_rpc_info = {
-            "name": "",
-            "description": "",
-            "apis": {
-                "dummy": {
-                    "name": "register_rpc",
-                    "description": "",
-                    "args": [
-                        {
-                            "name": "name",
-                            "description": "Name of RPC",
-                            "schema": {"type": "string"}
-                        },
-                        {
-                            "name": "description",
-                            "description": "Description of RPC",
-                            "schema": {"type": "string"}
-                        },
-                        {
-                            "name": "request_schema",
-                            "description": "Request JSONSchema of the RPC",
-                            "schema": Draft4Validator.META_SCHEMA
-                        },
-                        {
-                            "name": "response_schema",
-                            "description": "Response JSONSchema of the RPC",
-                            "schema": Draft4Validator.META_SCHEMA
-                        },
-                    ],
-                }
-            },
-            "request_queue": "/_system/root_rpc/request",
-            "response_queue": "/_system/root_rpc/response"
-        }
-
-        rpc_client = RPCClient(root_rpc_info)
-        rpc_client.start()
-        rpc_info = rpc_client["register_rpc"](self.name, self.description,
-                                              self.request_schema,
-                                              self.response_schema, _block=True)
-        return rpc_info
+        return self.service.rpc_client["register_rpc"](
+            self.name, self.description, self.request_schema,
+            self.response_schema, _block=True)
 
     def start(self):
         rpc_info = self.register_rpc()

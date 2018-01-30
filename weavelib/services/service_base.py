@@ -8,14 +8,68 @@ BackgroundServiceStart mixin before BaseService while inheriting.
 import logging
 import os
 import subprocess
-import sys
 import threading
 from contextlib import suppress
 
 import psutil
+from jsonschema import Draft4Validator
+
+from weavelib.rpc import RPCClient
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_root_rpc_client():
+    root_rpc_info = {
+        "name": "",
+        "description": "",
+        "apis": {
+            "register_rpc": {
+                "name": "register_rpc",
+                "description": "",
+                "args": [
+                    {
+                        "name": "name",
+                        "description": "Name of RPC",
+                        "schema": {"type": "string"}
+                    },
+                    {
+                        "name": "description",
+                        "description": "Description of RPC",
+                        "schema": {"type": "string"}
+                    },
+                    {
+                        "name": "request_schema",
+                        "description": "Request JSONSchema of the RPC",
+                        "schema": Draft4Validator.META_SCHEMA
+                    },
+                    {
+                        "name": "response_schema",
+                        "description": "Response JSONSchema of the RPC",
+                        "schema": Draft4Validator.META_SCHEMA
+                    },
+                ],
+            },
+            "register_app_view": {
+                "name": "register_app_view",
+                "description": "",
+                "args": [
+                    {
+                        "name": "object",
+                        "description": "View to register",
+                        "schema": {"type": "object"}
+                    }
+                ]
+            }
+        },
+        "request_queue": "/_system/root_rpc/request",
+        "response_queue": "/_system/root_rpc/response"
+    }
+
+    rpc_client = RPCClient(root_rpc_info)
+    rpc_client.start()
+    return rpc_client
 
 
 class BaseService(object):
@@ -23,6 +77,7 @@ class BaseService(object):
     def __init__(self, target_args=None, target_kwargs=None):
         self.target_args = () if target_args is None else target_args
         self.target_kwargs = {} if target_kwargs is None else target_kwargs
+        self.rpc_client = None
 
     def service_start(self):
         self.before_service_start(*self.target_args, **self.target_kwargs)
@@ -34,7 +89,7 @@ class BaseService(object):
         self.on_service_stop()
 
     def before_service_start(self):
-        pass
+        self.rpc_client = get_root_rpc_client()
 
     def on_service_start(self, *args, **kwargs):
         pass
