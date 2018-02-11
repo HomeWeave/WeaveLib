@@ -54,6 +54,10 @@ class SchemaValidationFailed(MessagingException):
     pass
 
 
+class AuthenticationFailed(MessagingException):
+    pass
+
+
 def parse_message(lines):
     required_fields = {"OP"}
     fields = {}
@@ -122,7 +126,7 @@ def raise_message_exception(err, extra):
     known_exceptions = {
         InvalidMessageStructure, BadOperation, RequiredFieldsMissing,
         QueueNotFound, SchemaValidationFailed, QueueAlreadyExists,
-        InternalMessagingError
+        InternalMessagingError, AuthenticationFailed
     }
     responses = {c().err_msg(): c for c in known_exceptions}
     responses["OK"] = None
@@ -258,6 +262,7 @@ class Receiver(object):
 
     def receive_headers(self):
         return {}
+
 
 class SyncMessenger(object):
     PORT = 11023
