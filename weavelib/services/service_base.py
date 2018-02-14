@@ -117,17 +117,16 @@ class BackgroundThreadServiceStart(object):
     def service_start(self):
         def thread_target():
             with suppress(Exception):
-                self.on_service_start(self, *self.args, **self.kwargs)
+                self.on_service_start()
 
-        self.before_service_start(self, *self.args, **self.kwargs)
+        self.before_service_start()
         self.service_thread = threading.Thread(target=thread_target)
         self.service_thread.start()
         self.started_event = threading.Event()
 
     def service_stop(self, timeout=15):
         self.on_service_stop()
-
-        # TODO: stop self.service_thread
+        self.service_thread.join()
 
     def wait_for_start(self, timeout):
         return self.started_event.wait(timeout)
