@@ -320,6 +320,8 @@ class Creator(object):
         msg = read_message(self.rfile)
         ensure_ok_message(msg)
 
+        return msg.headers["Q"]
+
     def close(self):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
