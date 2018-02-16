@@ -162,8 +162,9 @@ class Sender(object):
     READ_BUF_SIZE = -1
     WRITE_BUF_SIZE = 10240
 
-    def __init__(self, queue, host="localhost"):
+    def __init__(self, queue, host="localhost", **kwargs):
         self.queue = queue
+        self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
         self.host = host
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.send_lock = Lock()
@@ -179,8 +180,9 @@ class Sender(object):
         else:
             msg = Message("enqueue", obj)
 
-        if headers is not None:
-            msg.headers = headers
+        msg.headers.update(self.extra_headers)
+        if headers:
+            msg.headers.update(headers)
 
         msg.headers["Q"] = self.queue
 
@@ -199,8 +201,9 @@ class Receiver(object):
     READ_BUF_SIZE = -1
     WRITE_BUF_SIZE = 10240
 
-    def __init__(self, queue, host="localhost"):
+    def __init__(self, queue, host="localhost", **kwargs):
         self.queue = queue
+        self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
         self.host = host
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.active = False
@@ -223,7 +226,7 @@ class Receiver(object):
                     logger.exception("Encountered error. Stopping receiver.")
                 break
             if msg.op == "inform":
-                self.on_message(msg.task)
+                self.on_message(msg.task, msg.headers)
             elif msg.op == "result":
                 ensure_ok_message(msg)
             else:
@@ -234,7 +237,7 @@ class Receiver(object):
 
     def receive(self):
         dequeue_msg = Message("dequeue")
-        dequeue_msg.headers = self.receive_headers()
+        dequeue_msg.headers.update(self.extra_headers)
         dequeue_msg.headers["Q"] = self.queue
         write_message(self.wfile, dequeue_msg)
         msg = read_message(self.rfile)
@@ -257,11 +260,8 @@ class Receiver(object):
             except Exception:
                 pass
 
-    def on_message(self, msg):
+    def on_message(self, msg, headers):
         pass
-
-    def receive_headers(self):
-        return {}
 
 
 class SyncMessenger(object):
@@ -269,8 +269,9 @@ class SyncMessenger(object):
     READ_BUF_SIZE = -1
     WRITE_BUF_SIZE = 10240
 
-    def __init__(self, queue, host="localhost"):
+    def __init__(self, queue, host="localhost", **kwargs):
         self.queue = queue
+        self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
         self.host = host
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.active = False
@@ -282,15 +283,13 @@ class SyncMessenger(object):
 
     def send(self, obj):
         msg = Message("enqueue", obj)
+        msg.headers.update(self.extra_headers)
         msg.headers["Q"] = self.queue
 
         write_message(self.wfile, msg)
         msg = read_message(self.rfile)
         ensure_ok_message(msg)
-        return Receiver.receive(self).task
-
-    def receive_headers(self):
-        return {}
+        return Receiver.receive(self)
 
     def stop(self):
         Receiver.stop(self)
@@ -301,8 +300,9 @@ class Creator(object):
     READ_BUF_SIZE = -1
     WRITE_BUF_SIZE = 10240
 
-    def __init__(self, host="localhost"):
+    def __init__(self, host="localhost", **kwargs):
         self.host = host
+        self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.active = False
 

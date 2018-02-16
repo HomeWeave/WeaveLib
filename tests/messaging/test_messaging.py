@@ -93,7 +93,7 @@ class TestSyncMessenger(object):
         sender = Sender(queue)
         sender.start()
 
-        def reply(msg):
+        def reply(msg, headers):
             sender.send(msg)
 
         receiver = Receiver(queue)
