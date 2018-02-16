@@ -313,6 +313,7 @@ class Creator(object):
 
     def create(self, queue_info, headers=None):
         msg = Message("create", queue_info)
+        msg.headers.update(self.extra_headers)
         if headers is not None:
             msg.headers = headers
 
