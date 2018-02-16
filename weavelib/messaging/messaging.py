@@ -245,7 +245,7 @@ class Receiver(object):
             return msg
         if "RES" not in msg.headers:
             raise MessagingException("RES header absent. Not an inform msg.")
-        raise_message_exception(msg.headers["RES"], msg.headers["ERRMSG"])
+        raise_message_exception(msg.headers["RES"], msg.headers.get("ERRMSG"))
 
     def stop(self):
         self.active = False
