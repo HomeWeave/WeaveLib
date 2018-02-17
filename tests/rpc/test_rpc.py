@@ -12,8 +12,24 @@ from weavelib.rpc import ArgParameter, KeywordParameter, RemoteAPIError
 from weavelib.services import BaseService
 
 
+from weaveserver.core.logger import configure_logging
+
+configure_logging()
+
+
+AUTH = {
+    "auth1": {
+        "type": "SYSTEM",
+        "appid": "appmgr"
+    },
+    "auth2": {
+        "appid": "appid2"
+    }
+}
+
+
 class DummyService(BaseService):
-    def __init__(self):
+    def __init__(self, token):
         apis = [
             ServerAPI("api1", "desc1", [
                 ArgParameter("p1", "d1", str),
@@ -25,7 +41,7 @@ class DummyService(BaseService):
         ]
         self.rpc_server = RPCServer("name", "desc", apis, self)
         self.paused = False
-        super(DummyService, self).__init__()
+        super(DummyService, self).__init__(token)
 
     def api1(self, p1, p2, k3):
         if type(p1) != str or type(p2) != int or type(k3) != bool:
@@ -57,6 +73,7 @@ class TestRPC(object):
     def setup_class(cls):
         os.environ["USE_FAKE_REDIS"] = "TRUE"
         cls.service_manager = ServiceManager()
+        cls.service_manager.apps = AUTH
         cls.service_manager.start_services(["messaging", "appmanager"])
 
     @classmethod
@@ -65,7 +82,7 @@ class TestRPC(object):
         cls.service_manager.stop()
 
     def setup_method(self):
-        self.service = DummyService()
+        self.service = DummyService("auth2")
         self.service.service_start()
 
     def teardown_method(self):

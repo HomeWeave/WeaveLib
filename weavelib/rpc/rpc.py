@@ -74,20 +74,12 @@ class RPC(object):
 
 
 class RPCReceiver(Receiver):
-    def __init__(self, component, queue, host="localhost"):
-        super(RPCReceiver, self).__init__(queue, host=host)
+    def __init__(self, component, queue, host="localhost", **kwargs):
+        super(RPCReceiver, self).__init__(queue, host=host, **kwargs)
         self.component = component
 
-    def on_message(self, msg):
-        self.component.on_rpc_message(msg)
-
-class RPCSessionizedReceiver(RPCReceiver):
-    def __init__(self, component, queue, cookie, host="localhost"):
-        self.cookie = cookie
-        super(RPCSessionizedReceiver, self).__init__(component, queue, host)
-
-    def receive_headers(self):
-        return {"COOKIE": self.cookie}
+    def on_message(self, msg, headers):
+        self.component.on_rpc_message(msg, headers)
 
 
 class RPCServer(RPC):
@@ -109,8 +101,10 @@ class RPCServer(RPC):
 
     def start(self):
         rpc_info = self.register_rpc()
-        self.sender = Sender(rpc_info["response_queue"])
-        self.receiver = RPCReceiver(self, rpc_info["request_queue"])
+        self.sender = Sender(rpc_info["response_queue"],
+                             auth=self.service.auth_token)
+        self.receiver = RPCReceiver(self, rpc_info["request_queue"],
+                                    auth=self.service.auth_token)
 
         self.sender.start()
         self.receiver.start()
@@ -125,7 +119,7 @@ class RPCServer(RPC):
 
         self.executor.shutdown()
 
-    def on_rpc_message(self, rpc_obj):
+    def on_rpc_message(self, rpc_obj, headers):
         def make_done_callback(request_id, cmd, cookie):
             def callback(future):
                 ex = future.exception()
@@ -175,16 +169,18 @@ class RPCServer(RPC):
 
 
 class RPCClient(RPC):
-    def __init__(self, rpc_info):
+    def __init__(self, rpc_info, token=None):
+        self.token = token
         name = rpc_info["name"]
         description = rpc_info["description"]
         apis = [self.get_api_call(x) for x in rpc_info["apis"].values()]
         super(RPCClient, self).__init__(name, description, apis)
 
         self.client_cookie = "rpc-client-cookie-" + str(uuid4())
-        self.sender = Sender(rpc_info["request_queue"])
-        self.receiver = RPCSessionizedReceiver(self, rpc_info["response_queue"],
-                                               self.client_cookie)
+        self.sender = Sender(rpc_info["request_queue"],
+                             auth=self.token)
+        self.receiver = RPCReceiver(self, rpc_info["response_queue"],
+                                    cookie=self.client_cookie)
         self.receiver_thread = Thread(target=self.receiver.run)
 
         self.callbacks = {}
@@ -222,7 +218,7 @@ class RPCClient(RPC):
             self.sender.send({
                 "invocation": obj,
                 "response_cookie": self.client_cookie
-            })
+            }, headers={"AUTH": self.token})
             if not block:
                 return
 
@@ -235,7 +231,7 @@ class RPCClient(RPC):
 
         return ClientAPI.from_info(obj, on_invoke)
 
-    def on_rpc_message(self, msg):
+    def on_rpc_message(self, msg, headers):
         with self.callbacks_lock:
             callback = self.callbacks.pop(msg["id"])
 
