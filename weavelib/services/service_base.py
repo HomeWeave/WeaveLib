@@ -77,10 +77,8 @@ class BaseService(object):
         self.token = token
 
     def service_start(self):
-        self.before_service_start(*self.target_args, **self.target_kwargs)
-        with suppress(Exception):
-            return self.on_service_start(*self.target_args,
-                                         **self.target_kwargs)
+        self.before_service_start()
+        return self.on_service_start()
 
     def service_stop(self, timeout=None):
         self.on_service_stop()
