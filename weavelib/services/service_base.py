@@ -98,13 +98,6 @@ class BaseService(object):
     def notify_start(self):
         pass
 
-    def get_component_name(self):
-        raise NotImplementedError("Must override.")
-
-    def get_service_queue_name(self, queue_name):
-        # TODO: Here is not a good choice. Move elsewhere.
-        service_name = self.get_component_name()
-        return "/services/{}/{}".format(service_name, queue_name)
     @property
     def auth_token(self):
         return self.token
