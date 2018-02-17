@@ -145,9 +145,14 @@ class BackgroundProcessServiceStart(object):
         name = self.get_component_name()
         command = ["weave-launch", name]
         self.service_proc = subprocess.Popen(command, env=os.environ.copy(),
+                                             stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT)
         self.service_pid = self.service_proc.pid
+
+        self.service_proc.stdin.write((self.auth_token + "\n").encode())
+        self.service_proc.stdin.flush()
+
         for line in iter(self.service_proc.stdout.readline, b''):
             content = line.strip().decode()
             if "SERVICE-STARTED-" + name in content:
