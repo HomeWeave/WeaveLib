@@ -20,7 +20,7 @@ from weavelib.rpc import RPCClient
 logger = logging.getLogger(__name__)
 
 
-def get_root_rpc_client():
+def get_root_rpc_client(token):
     root_rpc_info = {
         "name": "",
         "description": "",
@@ -67,17 +67,14 @@ def get_root_rpc_client():
         "response_queue": "/_system/root_rpc/response"
     }
 
-    rpc_client = RPCClient(root_rpc_info)
-    rpc_client.start()
-    return rpc_client
+    return RPCClient(root_rpc_info, token)
 
 
 class BaseService(object):
     """ Starts the service in the current thread. """
-    def __init__(self, target_args=None, target_kwargs=None):
-        self.target_args = () if target_args is None else target_args
-        self.target_kwargs = {} if target_kwargs is None else target_kwargs
-        self.rpc_client = None
+    def __init__(self, token):
+        self.rpc_client = get_root_rpc_client(token)
+        self.token = token
 
     def service_start(self):
         self.before_service_start(*self.target_args, **self.target_kwargs)
@@ -89,7 +86,7 @@ class BaseService(object):
         self.on_service_stop()
 
     def before_service_start(self):
-        self.rpc_client = get_root_rpc_client()
+        self.rpc_client.start()
 
     def on_service_start(self, *args, **kwargs):
         pass
@@ -110,6 +107,9 @@ class BaseService(object):
         # TODO: Here is not a good choice. Move elsewhere.
         service_name = self.get_component_name()
         return "/services/{}/{}".format(service_name, queue_name)
+    @property
+    def auth_token(self):
+        return self.token
 
 
 class BackgroundThreadServiceStart(object):
