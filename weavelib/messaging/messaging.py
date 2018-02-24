@@ -225,6 +225,10 @@ class Receiver(object):
         while self.active:
             try:
                 msg = self.receive()
+            except QueueClosed:
+                logger.error("Queue closed: " + self.queue)
+                self.stop()
+                break
             except IOError:
                 if self.active:
                     logger.exception("Encountered error. Stopping receiver.")
