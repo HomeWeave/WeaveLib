@@ -50,6 +50,10 @@ class QueueAlreadyExists(MessagingException):
     pass
 
 
+class QueueClosed(MessagingException):
+    pass
+
+
 class SchemaValidationFailed(MessagingException):
     pass
 
@@ -126,7 +130,7 @@ def raise_message_exception(err, extra):
     known_exceptions = {
         InvalidMessageStructure, BadOperation, RequiredFieldsMissing,
         QueueNotFound, SchemaValidationFailed, QueueAlreadyExists,
-        InternalMessagingError, AuthenticationFailed
+        InternalMessagingError, AuthenticationFailed, QueueClosed
     }
     responses = {c().err_msg(): c for c in known_exceptions}
     responses["OK"] = None
