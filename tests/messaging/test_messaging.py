@@ -6,7 +6,7 @@ from weavelib.messaging import Receiver, SyncMessenger, Creator
 
 from weaveserver.services.discovery import DiscoveryService
 from weaveserver.services.discovery.service import DiscoveryServer
-from weaveserver.services.messaging import MessageService
+from weaveserver.core.services import ServiceManager
 
 
 CONFIG = {
@@ -20,6 +20,17 @@ CONFIG = {
 }
 
 
+AUTH = {
+    "auth1": {
+        "type": "SYSTEM",
+        "appid": "appmgr"
+    },
+    "auth2": {
+        "appid": "appid2"
+    }
+}
+
+
 class TestDiscoverMessageServer(object):
     @classmethod
     def setup_class(cls):
@@ -29,7 +40,7 @@ class TestDiscoverMessageServer(object):
         assert discover_message_server() is None
 
     def test_discovery_server_bad_json(self):
-        service = DiscoveryService(None)
+        service = DiscoveryService("token", None)
         service.server.process = lambda x, y: "sdf;lghkd;flkh".encode("UTF-8")
         event = Event()
         service.notify_start = event.set
@@ -40,7 +51,7 @@ class TestDiscoverMessageServer(object):
         service.on_service_stop()
 
     def test_discovery_server_unknown_json(self):
-        service = DiscoveryService(None)
+        service = DiscoveryService("token", None)
         service.server.process = lambda x, y: '{"vld": "json"}'.encode("UTF-8")
         event = Event()
         service.notify_start = event.set
@@ -51,7 +62,7 @@ class TestDiscoverMessageServer(object):
         service.on_service_stop()
 
     def test_valid_discovery_server(self):
-        service = DiscoveryService(None)
+        service = DiscoveryService("token", None)
         event = Event()
         service.notify_start = event.set
         Thread(target=service.on_service_start).start()
@@ -67,23 +78,19 @@ class TestDiscoverMessageServer(object):
 class TestSyncMessenger(object):
     @classmethod
     def setup_class(cls):
-        event = Event()
-        cls.service = MessageService(CONFIG)
-        cls.service.notify_start = lambda: event.set()
-        cls.service_thread = Thread(target=cls.service.on_service_start)
-        cls.service_thread.start()
-        event.wait()
+        cls.service_manager = ServiceManager()
+        cls.service_manager.apps = AUTH
+        cls.service_manager.start_services(["messaging"])
 
         cls.start_echo_receiver("/dummy")
 
     @classmethod
     def teardown_class(cls):
-        cls.service.on_service_stop()
-        cls.service_thread.join()
+        cls.service_manager.stop()
 
     @classmethod
     def start_echo_receiver(cls, queue):
-        creator = Creator()
+        creator = Creator(auth="auth1")
         creator.start()
         creator.create({
             "queue_name": queue,
@@ -106,6 +113,6 @@ class TestSyncMessenger(object):
         sync = SyncMessenger("/dummy")
         sync.start()
 
-        assert obj == sync.send(obj)
+        assert obj == sync.send(obj).task
 
         sync.stop()
