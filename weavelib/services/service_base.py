@@ -133,7 +133,7 @@ class BackgroundProcessServiceStart(object):
         self.child_thread.start()
 
     def service_stop(self, timeout=15):
-        name = self.get_component_name()
+        name = '.'.join(self.__module__.split('.')[:-1])
         logger.info("Stopping background process: %s", name)
         psutil.Process(self.service_pid).terminate()
         try:
@@ -142,7 +142,7 @@ class BackgroundProcessServiceStart(object):
             psutil.Process(self.service_pid).kill()
 
     def child_process(self):
-        name = self.get_component_name()
+        name = '.'.join(self.__module__.split('.')[:-1])
         command = ["weave-launch", name]
         self.service_proc = subprocess.Popen(command, env=os.environ.copy(),
                                              stdin=subprocess.PIPE,
@@ -161,7 +161,8 @@ class BackgroundProcessServiceStart(object):
                 logger.info("[%s]: %s", name, content)
 
     def notify_start(self):
-        logger.info("SERVICE-STARTED-" + self.get_component_name())
+        name = '.'.join(self.__module__.split('.')[:-1])
+        logger.info("SERVICE-STARTED-" + name)
 
     def wait_for_start(self, timeout):
         return self.started_event.wait(timeout)
