@@ -1,8 +1,11 @@
 from threading import Event, Thread
 
+import pytest
+
 import weavelib.netutils as netutils
 from weavelib.messaging import discover_message_server, Sender
 from weavelib.messaging import Receiver, SyncMessenger, Creator
+from weavelib.messaging import AuthenticationFailed, RequiredFieldsMissing
 
 from weaveserver.services.discovery import DiscoveryService
 from weaveserver.services.discovery.service import DiscoveryServer
@@ -116,3 +119,27 @@ class TestSyncMessenger(object):
         assert obj == sync.send(obj).task
 
         sync.stop()
+
+
+class TestCreator(object):
+    @classmethod
+    def setup_class(cls):
+        cls.service_manager = ServiceManager()
+        cls.service_manager.apps = AUTH
+        cls.service_manager.start_services(["messaging"])
+
+    @classmethod
+    def teardown_class(cls):
+        cls.service_manager.stop()
+
+    def test_create_without_auth(self):
+        creator = Creator()
+        creator.start()
+        with pytest.raises(RequiredFieldsMissing):
+            creator.create({"queue_name": "/test"})
+
+    def test_create_bad_auth(self):
+        creator = Creator(auth="bad-auth")
+        creator.start()
+        with pytest.raises(AuthenticationFailed):
+            creator.create({"queue_name": "/test"})
