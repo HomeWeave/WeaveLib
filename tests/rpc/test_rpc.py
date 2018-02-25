@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from weaveserver.core.services import ServiceManager
 
-from weavelib.rpc import RPCClient, RPCServer, ServerAPI
+from weavelib.rpc import RPCClient, RPCServer, ServerAPI, get_rpc_caller
 from weavelib.rpc import ArgParameter, KeywordParameter, RemoteAPIError
 from weavelib.services import BaseService
 
@@ -37,6 +37,7 @@ class DummyService(BaseService):
                 KeywordParameter("k3", "d3", bool)
             ], self.api1),
             ServerAPI("api2", "desc2", [], self.api2),
+            ServerAPI("api3", "desc3", [], self.api3),
             ServerAPI("exception", "desc2", [], self.exception)
         ]
         self.rpc_server = RPCServer("name", "desc", apis, self)
@@ -54,6 +55,11 @@ class DummyService(BaseService):
 
     def api2(self):
         return "API2"
+
+    def api3(self):
+        def execute_api_internal():
+            return get_rpc_caller()
+        return execute_api_internal()
 
     def exception(self):
         raise RuntimeError("dummy")
@@ -144,6 +150,16 @@ class TestRPC(object):
         event.wait()
 
         assert result[0]["result"] == "hello5False"
+
+        client.stop()
+
+    def test_rpc_caller(self):
+        info = self.service.rpc_server.info_message
+        client = RPCClient(info, token="auth2")
+        client.start()
+
+        res = client["api3"](_block=True)
+        assert res == AUTH["auth2"]
 
         client.stop()
 

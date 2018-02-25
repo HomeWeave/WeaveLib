@@ -1,3 +1,4 @@
+import inspect
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread, RLock, Event
@@ -138,6 +139,11 @@ class RPCServer(RPC):
                     "result": future.result()
                 }, headers={"COOKIE": cookie})
             return callback
+
+        def execute_api_internal(rpc_obj, headers, api, *args, **kwargs):
+            # Keep func name in sync one in get_rpc_caller(..)
+            return api(*args, **kwargs)
+
         obj = rpc_obj["invocation"]
         cookie = rpc_obj["response_cookie"]
         request_id = obj["id"]
@@ -154,7 +160,8 @@ class RPCServer(RPC):
 
         args = obj.get("args", [])
         kwargs = obj.get("kwargs", {})
-        future = self.executor.submit(api, *args, **kwargs)
+        future = self.executor.submit(execute_api_internal, rpc_obj, headers,
+                                      api, *args, **kwargs)
         future.add_done_callback(make_done_callback(request_id, cmd, cookie))
 
     @property
@@ -239,3 +246,12 @@ class RPCClient(RPC):
             return
 
         callback(msg)
+
+
+def get_rpc_caller():
+    for frame, _, _, func, _, _ in inspect.stack():
+        if func == 'execute_api_internal':
+            if "headers" not in frame.f_locals:
+                continue
+
+            return frame.f_locals["headers"].get("AUTH")

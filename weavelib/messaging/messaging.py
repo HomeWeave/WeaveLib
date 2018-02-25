@@ -250,6 +250,7 @@ class Receiver(object):
         write_message(self.wfile, dequeue_msg)
         msg = read_message(self.rfile)
         if msg.op == "inform":
+            self.preprocess(msg)
             return msg
         if "RES" not in msg.headers:
             raise MessagingException("RES header absent. Not an inform msg.")
@@ -266,6 +267,13 @@ class Receiver(object):
             try:
                 item.close()
             except Exception:
+                pass
+
+    def preprocess(self, msg):
+        if "AUTH" in msg.headers:
+            try:
+                msg.headers["AUTH"] = json.loads(msg.headers["AUTH"])
+            except:
                 pass
 
     def on_message(self, msg, headers):
