@@ -307,6 +307,9 @@ class SyncMessenger(object):
         ensure_ok_message(msg)
         return Receiver.receive(self)
 
+    def preprocess(self, msg):
+        return Receiver.preprocess(self, msg)
+
     def stop(self):
         Receiver.stop(self)
 
