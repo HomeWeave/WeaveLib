@@ -96,9 +96,9 @@ class RPCServer(RPC):
         self.cookie = None
 
     def register_rpc(self):
+        apis = {name: api.info for name, api in self.apis.items()}
         return self.service.rpc_client["register_rpc"](
-            self.name, self.description, self.request_schema,
-            self.response_schema, _block=True)
+            self.name, self.description, apis, _block=True)
 
     def start(self):
         rpc_info = self.register_rpc()
