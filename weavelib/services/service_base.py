@@ -12,7 +12,6 @@ import threading
 from contextlib import suppress
 
 import psutil
-from jsonschema import Draft4Validator
 
 from weavelib.rpc import RPCClient
 
@@ -40,14 +39,9 @@ def get_root_rpc_client(token):
                         "schema": {"type": "string"}
                     },
                     {
-                        "name": "request_schema",
-                        "description": "Request JSONSchema of the RPC",
-                        "schema": Draft4Validator.META_SCHEMA
-                    },
-                    {
-                        "name": "response_schema",
-                        "description": "Response JSONSchema of the RPC",
-                        "schema": Draft4Validator.META_SCHEMA
+                        "name": "apis",
+                        "description": "Map of all APIs",
+                        "schema": {"type": "object"}
                     },
                 ],
             },
