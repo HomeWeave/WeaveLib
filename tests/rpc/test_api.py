@@ -78,7 +78,31 @@ class TestAPI(object):
             "name": "name",
             "description": "desc",
             "args": [x.info for x in api.args],
-            "kwargs": {p.name: p.info for p in api.kwargs}
+            "kwargs": {p.name: p.info for p in api.kwargs},
+            "request_schema": {
+                "additionalProperties": False,
+                "properties": {
+                    "args": {
+                        "items": [{"type": "string"}],
+                        "maxItems": 1,
+                        "minItems": 1,
+                        "type": "array"
+                    },
+                    "command": {"enum": ["name"]},
+                    "id": {"type": "string"},
+                    "kwargs": {
+                        "properties": {
+                            "a2": {"type": "number"},
+                            "a3": {"type": "boolean"}
+                        },
+                        "required": ["a2", "a3"],
+                        "type": "object"
+                    }
+                },
+                "required": ["command", "id", "args", "kwargs"],
+                "type": "object"
+            },
+            "response_schema": {}
         }
 
     def test_validate_call(self):

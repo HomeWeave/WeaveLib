@@ -102,7 +102,9 @@ class API(object):
             "name": self.name,
             "description": self.description,
             "args": [x.info for x in self.args],
-            "kwargs": {x.name: x.info for x in self.kwargs}
+            "kwargs": {x.name: x.info for x in self.kwargs},
+            "request_schema": self.schema,
+            "response_schema": {}
         }
 
     def validate_call(self, *args, **kwargs):
