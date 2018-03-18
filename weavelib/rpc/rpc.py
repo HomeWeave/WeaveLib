@@ -184,8 +184,7 @@ class RPCClient(RPC):
         super(RPCClient, self).__init__(name, description, apis)
 
         self.client_cookie = "rpc-client-cookie-" + str(uuid4())
-        self.sender = Sender(rpc_info["request_queue"],
-                             auth=self.token)
+        self.sender = Sender(rpc_info["request_queue"], auth=self.token)
         self.receiver = RPCReceiver(self, rpc_info["response_queue"],
                                     cookie=self.client_cookie)
         self.receiver_thread = Thread(target=self.receiver.run)
