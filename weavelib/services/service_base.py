@@ -45,8 +45,8 @@ def get_root_rpc_client(token):
                     },
                 ],
             },
-            "register_app_view": {
-                "name": "register_app_view",
+            "register_view": {
+                "name": "register_view",
                 "description": "",
                 "args": [
                     {
