@@ -50,9 +50,19 @@ def get_root_rpc_client(token):
                 "description": "",
                 "args": [
                     {
-                        "name": "object",
-                        "description": "View to register",
-                        "schema": {"type": "object"}
+                        "name": "url",
+                        "description": "URL to register at.",
+                        "schema": {"type": "string"}
+                    },
+                    {
+                        "name": "content",
+                        "description": "Base64 encoded content.",
+                        "schema": {"type": "string"}
+                    },
+                    {
+                        "name": "mimetype",
+                        "description": "Mimetype of the content",
+                        "schema": {"type": "string"}
                     }
                 ]
             }
