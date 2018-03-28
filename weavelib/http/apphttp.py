@@ -39,15 +39,18 @@ class AppHTTPServer(object):
                                                         _block=block)
 
     def register_folder(self, path):
+        VIEW_MIME = "application/vnd.weaveview+json"
+
         path = path_from_service(path, self.service)
         base_url = None
         for cur_folder, _, files in os.walk(path):
             for filename in files:
                 cur_file = os.path.join(cur_folder, filename)
                 url = os.path.relpath(cur_file, path)
-                http_url = self.add_url(url, cur_file)
-                print("Request URL: ", url)
-                print ("HTTP URL: ", http_url)
+                if url == "index.json":
+                    http_url = self.add_url(url, cur_file, mime=VIEW_MIME)
+                else:
+                    http_url = self.add_url(url, cur_file)
 
                 if base_url is None and http_url and http_url.endswith(url):
                     base_url = http_url[:-len(url)]
