@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE, DEVNULL
 from sys import platform
 
 import netifaces
+from ipaddress import IPv4Network
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,20 @@ def iter_ipv4_addresses():
         for ip_obj in netifaces.ifaddresses(iface).get(netifaces.AF_INET, []):
             if "netmask" in ip_obj and "addr" in ip_obj:
                 yield ip_obj
+
+
+def relevant_ipv4_address(ip_addr):
+    """
+    Returns machine's IPv4 address belonging to the same interface as ip_addr.
+    """
+    for ip_obj in iter_ipv4_addresses():
+        ours = IPv4Network(ip_obj["addr"] + "/" + ip_obj["netmask"],
+                           strict=False)
+        theirs = IPv4Network(ip_addr + "/" + ip_obj["netmask"], strict=False)
+        if ours == theirs:
+            return ip_obj["addr"]
+
+    return None
 
 
 def ping_host(host):
