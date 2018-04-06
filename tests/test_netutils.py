@@ -112,3 +112,4 @@ class TestRelevantIPv4Address(object):
 
         assert netutils.relevant_ipv4_address("192.168.1.114") == "192.168.1.4"
         assert netutils.relevant_ipv4_address("162.168.5.94") == "162.168.5.4"
+        assert netutils.relevant_ipv4_address("172.168.5.94") is None
