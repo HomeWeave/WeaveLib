@@ -125,7 +125,7 @@ class RPCServer(RPC):
             def callback(future):
                 ex = future.exception()
                 if ex:
-                    logger.warn("Internal API raised Exception.", ex)
+                    logger.warning("Internal API raised Exception: %s", ex)
                     self.sender.send({
                         "id": request_id,
                         "command": cmd,
