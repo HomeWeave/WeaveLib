@@ -65,6 +65,22 @@ def get_root_rpc_client(token):
                         "schema": {"type": "string"}
                     }
                 ]
+            },
+            "rpc_info": {
+                "name": "rpc_info",
+                "description": "",
+                "args": [
+                    {
+                        "name": "package_name",
+                        "description": "",
+                        "schema": {"type": "string"},
+                    },
+                    {
+                        "name": "rpc_name",
+                        "description": "",
+                        "schema": {"type": "string"},
+                    }
+                ]
             }
         },
         "request_queue": "/_system/root_rpc/request",
