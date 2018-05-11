@@ -66,6 +66,11 @@ def get_root_rpc_client(token):
                     }
                 ]
             },
+            "register_app": {
+                "name": "register_app",
+                "description": "",
+                "args": [],
+            },
             "rpc_info": {
                 "name": "rpc_info",
                 "description": "",
@@ -105,6 +110,7 @@ class BaseService(object):
 
     def before_service_start(self):
         self.rpc_client.start()
+        self.rpc_client["register_app"](_block=True)
 
     def on_service_start(self, *args, **kwargs):
         pass
