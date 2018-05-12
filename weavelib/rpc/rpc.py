@@ -123,21 +123,20 @@ class RPCServer(RPC):
     def on_rpc_message(self, rpc_obj, headers):
         def make_done_callback(request_id, cmd, cookie):
             def callback(future):
-                ex = future.exception()
-                if ex:
-                    logger.warning("Internal API raised Exception: %s", ex)
+                try:
+                    self.sender.send({
+                        "id": request_id,
+                        "command": cmd,
+                        "result": future.result()
+                    }, headers={"COOKIE": cookie})
+                except:
+                    logger.exception("Internal API raised exception.")
                     self.sender.send({
                         "id": request_id,
                         "command": cmd,
                         "error": "Internal API Error."
                     }, headers={"COOKIE": cookie})
-                    return
 
-                self.sender.send({
-                    "id": request_id,
-                    "command": cmd,
-                    "result": future.result()
-                }, headers={"COOKIE": cookie})
             return callback
 
         def execute_api_internal(rpc_obj, headers, api, *args, **kwargs):
