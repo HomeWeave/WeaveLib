@@ -129,8 +129,8 @@ class RPCServer(RPC):
                         "command": cmd,
                         "result": future.result()
                     }, headers={"COOKIE": cookie})
-                except:
-                    logger.exception("Internal API raised exception.")
+                except Exception as e:
+                    logger.exception("Internal API raised exception." + str(e))
                     self.sender.send({
                         "id": request_id,
                         "command": cmd,
