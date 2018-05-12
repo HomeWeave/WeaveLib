@@ -28,7 +28,7 @@ def parse_message(lines):
         fields[line_parts[0]] = line_parts[1]
 
     if required_fields - set(fields.keys()):
-        raise weavelib.exceptions.ProtocolError("Required fields missing.");
+        raise weavelib.exceptions.ProtocolError("Required fields missing.")
 
     if "MSG" in fields:
         try:
