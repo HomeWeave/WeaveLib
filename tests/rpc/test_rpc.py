@@ -23,6 +23,7 @@ AUTH = {
         "appid": "appmgr"
     },
     "auth2": {
+        "package": "p",
         "appid": "appid2"
     }
 }
