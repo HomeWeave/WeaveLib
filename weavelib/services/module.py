@@ -12,3 +12,11 @@ class Module(object):
 
     def get_config(self):
         return self.meta.get("config", [])
+
+    def json(self):
+        # TODO: Remove this and use the entire object for storing the map.
+        return {
+            "type": "SYSTEM" if self.system else "PLUGIN",
+            "appid": self.id,
+            "package": self.package_path.replace("/", ".")
+        }
