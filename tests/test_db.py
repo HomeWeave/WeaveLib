@@ -41,7 +41,7 @@ class TestAppDBConnection(object):
     def setup_class(cls):
         os.environ["DB_PATH"] = ":memory:"
         cls.service_manager = ServiceManager()
-        cls.service_manager.apps = AUTH
+        cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["messaging", "appmanager",
                                             "simpledb"])
 
