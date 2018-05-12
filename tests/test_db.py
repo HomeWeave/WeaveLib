@@ -1,4 +1,5 @@
 import os
+from tempfile import NamedTemporaryFile
 
 import pytest
 from weaveserver.core.services import ServiceManager
@@ -39,7 +40,7 @@ class DummyService(BaseService):
 class TestAppDBConnection(object):
     @classmethod
     def setup_class(cls):
-        os.environ["DB_PATH"] = ":memory:"
+        os.environ["DB_PATH"] = NamedTemporaryFile(delete=False).name
         cls.service_manager = ServiceManager()
         cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["messaging", "appmanager",
@@ -48,6 +49,7 @@ class TestAppDBConnection(object):
     @classmethod
     def teardown_class(cls):
         cls.service_manager.stop()
+        os.unlink(os.environ["DB_PATH"])
         del os.environ["DB_PATH"]
 
     def setup_method(self):
