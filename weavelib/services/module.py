@@ -8,6 +8,7 @@ class Module(object):
         self.deps = deps
         self.meta = meta
         self.package_path = package_path
+        self.system = False
 
     def get_config(self):
         return self.meta.get("config", [])
