@@ -11,7 +11,7 @@ class AppDBConnection(object):
         rpc = self.service.rpc_client["rpc_info"]
         rpc_info = rpc("weaveserver.services.simpledb", "object_store",
                        _block=True)
-        self.db_rpc = RPCClient(rpc_info)
+        self.db_rpc = RPCClient(rpc_info, self.service.token)
         self.db_rpc.start()
 
     def stop(self):
@@ -24,4 +24,4 @@ class AppDBConnection(object):
             raise KeyError(key)
 
     def __setitem__(self, key, value):
-        self.db_rpc["insert"](key, value)
+        self.db_rpc["insert"](key, value, _block=True)
