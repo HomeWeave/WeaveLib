@@ -39,11 +39,11 @@ class DummyService(BaseService):
 class TestAppDBConnection(object):
     @classmethod
     def setup_class(cls):
+        os.environ["DB_PATH"] = ":memory:"
         cls.service_manager = ServiceManager()
         cls.service_manager.apps = AUTH
         cls.service_manager.start_services(["messaging", "appmanager",
                                             "simpledb"])
-        os.environ["DB_PATH"] = ":memory:"
 
     @classmethod
     def teardown_class(cls):
