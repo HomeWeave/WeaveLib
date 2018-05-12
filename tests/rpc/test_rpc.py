@@ -80,7 +80,7 @@ class TestRPC(object):
     def setup_class(cls):
         os.environ["USE_FAKE_REDIS"] = "TRUE"
         cls.service_manager = ServiceManager()
-        cls.service_manager.apps = AUTH
+        cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["messaging", "appmanager"])
 
     @classmethod
