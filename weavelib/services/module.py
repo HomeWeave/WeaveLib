@@ -1,5 +1,9 @@
+from uuid import uuid4
+
+
 class Module(object):
     def __init__(self, name, deps, meta, package_path):
+        self.id = "app-id-" + str(uuid4())
         self.name = name
         self.deps = deps
         self.meta = meta
