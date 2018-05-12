@@ -12,6 +12,7 @@ class AppDBConnection(object):
         rpc_info = rpc("weaveserver.services.simpledb", "object_store",
                        _block=True)
         self.db_rpc = RPCClient(rpc_info)
+        self.db_rpc.start()
 
     def stop(self):
         self.db_rpc.stop()
