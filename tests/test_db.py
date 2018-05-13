@@ -46,18 +46,16 @@ class TestAppDBConnection(object):
         cls.service_manager.start_services(["messaging", "appmanager",
                                             "simpledb"])
 
+        cls.service = DummyService("auth2")
+        cls.service.service_start()
+
     @classmethod
     def teardown_class(cls):
+        cls.service.service_stop()
+
         cls.service_manager.stop()
         os.unlink(os.environ["DB_PATH"])
         del os.environ["DB_PATH"]
-
-    def setup_method(self):
-        self.service = DummyService("auth2")
-        self.service.service_start()
-
-    def teardown_method(self):
-        self.service.service_stop()
 
     def test_object_save(self):
         self.service.db["test"] = "value"
