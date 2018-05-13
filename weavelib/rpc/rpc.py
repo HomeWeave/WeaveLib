@@ -7,6 +7,8 @@ from uuid import uuid4
 from jsonschema import Draft4Validator
 
 from weavelib.messaging import Sender, Receiver, Creator
+from weavelib.messaging.messaging import raise_message_exception
+from weavelib.exceptions import WeaveException
 from .api import API, ArgParameter, KeywordParameter
 
 
@@ -129,6 +131,14 @@ class RPCServer(RPC):
                         "command": cmd,
                         "result": future.result()
                     }, headers={"COOKIE": cookie})
+                except WeaveException as e:
+                    logger.warning("WeaveException was raised by API: %s", e)
+                    self.sender.send({
+                        "id": request_id,
+                        "command": cmd,
+                        "error_name": e.err_msg(),
+                        "error": e.extra
+                    }, headers={"COOKIE": cookie})
                 except Exception as e:
                     logger.exception("Internal API raised exception." + str(e))
                     self.sender.send({
@@ -231,6 +241,9 @@ class RPCClient(RPC):
 
             if "result" in res_arr[0]:
                 return res_arr[0]["result"]
+            elif "error_name" in res_arr[0]:
+                raise_message_exception(res_arr[0]["error_name"],
+                                        res_arr[0].get("error"))
             else:
                 raise RemoteAPIError(res_arr[0].get("error"))
 
