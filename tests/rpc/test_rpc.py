@@ -102,6 +102,26 @@ class TestRPC(object):
 
         client.stop()
 
+    @pytest.mark.skip(reason="Fails.")
+    def test_with_different_client(self):
+        info = self.service.rpc_server.info_message
+        client = RPCClient(info)
+        client.start()
+
+        res = client["api1"]("hello", 5, k3=False, _block=True)
+        assert res == "hello5False"
+
+        client.stop()
+
+        client = RPCClient(info)
+        client.start()
+
+        res = client["api1"]("hello", 5, k3=False, _block=True)
+        assert res == "hello5False"
+
+        client.stop()
+
+
     def test_several_functions_invoke(self):
         info = self.service.rpc_server.info_message
 
