@@ -1,4 +1,3 @@
-import os
 import time
 import random
 from threading import Event
@@ -78,14 +77,12 @@ class DummyService(BaseService):
 class TestRPC(object):
     @classmethod
     def setup_class(cls):
-        os.environ["USE_FAKE_REDIS"] = "TRUE"
         cls.service_manager = ServiceManager()
         cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["messaging", "appmanager"])
 
     @classmethod
     def teardown_class(cls):
-        del os.environ["USE_FAKE_REDIS"]
         cls.service_manager.stop()
 
     def setup_method(self):
