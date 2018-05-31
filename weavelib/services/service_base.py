@@ -65,6 +65,27 @@ def get_root_rpc_client(token):
                         "schema": {"type": "string"}
                     }
                 ]
+            },
+            "register_app": {
+                "name": "register_app",
+                "description": "",
+                "args": [],
+            },
+            "rpc_info": {
+                "name": "rpc_info",
+                "description": "",
+                "args": [
+                    {
+                        "name": "package_name",
+                        "description": "",
+                        "schema": {"type": "string"},
+                    },
+                    {
+                        "name": "rpc_name",
+                        "description": "",
+                        "schema": {"type": "string"},
+                    }
+                ]
             }
         },
         "request_queue": "/_system/root_rpc/request",
@@ -89,6 +110,7 @@ class BaseService(object):
 
     def before_service_start(self):
         self.rpc_client.start()
+        self.rpc_client["register_app"](_block=True)
 
     def on_service_start(self, *args, **kwargs):
         pass

@@ -3,9 +3,9 @@ from threading import Event, Thread
 import pytest
 
 import weavelib.netutils as netutils
+from weavelib.exceptions import AuthenticationFailed, ProtocolError
 from weavelib.messaging import discover_message_server, Sender
 from weavelib.messaging import Receiver, SyncMessenger, Creator
-from weavelib.messaging import AuthenticationFailed, RequiredFieldsMissing
 
 from weaveserver.services.discovery import DiscoveryService
 from weaveserver.services.discovery.service import DiscoveryServer
@@ -135,7 +135,7 @@ class TestCreator(object):
     def test_create_without_auth(self):
         creator = Creator()
         creator.start()
-        with pytest.raises(RequiredFieldsMissing):
+        with pytest.raises(ProtocolError):
             creator.create({"queue_name": "/test"})
 
     def test_create_bad_auth(self):

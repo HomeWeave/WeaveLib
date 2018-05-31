@@ -1,4 +1,3 @@
-import os
 import time
 import random
 from threading import Event
@@ -23,6 +22,7 @@ AUTH = {
         "appid": "appmgr"
     },
     "auth2": {
+        "package": "p",
         "appid": "appid2"
     }
 }
@@ -77,14 +77,12 @@ class DummyService(BaseService):
 class TestRPC(object):
     @classmethod
     def setup_class(cls):
-        os.environ["USE_FAKE_REDIS"] = "TRUE"
         cls.service_manager = ServiceManager()
-        cls.service_manager.apps = AUTH
+        cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["messaging", "appmanager"])
 
     @classmethod
     def teardown_class(cls):
-        del os.environ["USE_FAKE_REDIS"]
         cls.service_manager.stop()
 
     def setup_method(self):
@@ -103,6 +101,26 @@ class TestRPC(object):
         assert res == "hello5False"
 
         client.stop()
+
+    @pytest.mark.skip(reason="Fails.")
+    def test_with_different_client(self):
+        info = self.service.rpc_server.info_message
+        client = RPCClient(info)
+        client.start()
+
+        res = client["api1"]("hello", 5, k3=False, _block=True)
+        assert res == "hello5False"
+
+        client.stop()
+
+        client = RPCClient(info)
+        client.start()
+
+        res = client["api1"]("hello", 5, k3=False, _block=True)
+        assert res == "hello5False"
+
+        client.stop()
+
 
     def test_several_functions_invoke(self):
         info = self.service.rpc_server.info_message
