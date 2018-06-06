@@ -1,11 +1,13 @@
 import base64
+import errno
 import inspect
 import mimetypes
 import os
+import select
+import sys
+from threading import Thread
 
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
-
+from pyinotify import Notifier, ProcessEvent, WatchManager, IN_MODIFY
 
 mimetypes.init()
 
@@ -38,47 +40,69 @@ def register_url(service, cur_file, path, mime=None, block=True):
         return url[:-len(rel_path)], rel_path
 
 
-class FileSystemUpdater(FileSystemEventHandler):
-    def __init__(self, callback):
-        self.callback = callback
+class FileChangeNotifier(Notifier):
+    # From: https://ondergetekende.nl/using-pyinotify-with-eventlet.html.
+    def __init__(self, *args, **kwargs):
+        super(FileChangeNotifier, self).__init__(*args, **kwargs)
 
-    def on_modified(self, event):
-        if isinstance(event, FileModifiedEvent):
-            self.callback(event.src_path)
-
-
-class FileWatcher(Observer):
-    def __init__(self, base_path, service):
-        super(FileWatcher, self).__init__()
-        self.base_path = base_path
-
-        def callback(path):
-            register_url(service, path, base_path)
-
-        self.updater = FileSystemUpdater(callback)
+        # We won't be using the pollobj
+        self._pollobj.unregister(self._fd)
+        self._pollobj = None
+        self._thread = Thread(target=self.loop,
+                              kwargs={"callback": self.is_active})
 
     def start(self):
-        self.schedule(self.updater, path=self.base_path, recursive=True)
-        super(FileWatcher, self).start()
+        self._thread.start()
 
     def stop(self):
-        super(FileWatcher, self).stop()
-        super(FileWatcher, self).join()
+        if self._fd is not None:
+            os.close(self._fd)
+            self._fd = None
+        if self._thread.is_alive():
+            self._thread.join()
+
+    def is_active(self):
+        return self._fd is not None
+
+    def check_events(self, timeout=None):
+        while True:
+            try:
+                read_fs, _, _ = select.select([self._fd], [], [])
+                break
+            except select.error as err:
+                error_no = err[0] if sys.version_info[0] < 3 else err.errno
+                if error_no == errno.EINTR:
+                    break
+                else:
+                    raise
+
+        return bool(read_fs)
+
+
+class FileSystemUpdater(ProcessEvent):
+    def __init__(self, relative_path, service, *args, **kwargs):
+        self.service = service
+        self.relative_path = relative_path
+        super(FileSystemUpdater, self).__init__(*args, **kwargs)
+
+    def process_IN_MODIFY(self, event):
+        register_url(self.service, event.pathname, self.relative_path)
+
+
+WATCH_MANAGER = WatchManager()
 
 
 class AppHTTPServer(object):
     def __init__(self, service):
         self.service = service
-        self.watchers = []
+        self.watcher_notifiers = []
 
     def start(self):
         pass
 
     def stop(self):
-        for watcher in self.watchers:
-            watcher.stop()
-        for watcher in self.watchers:
-            watcher.join()
+        for notifier in self.watcher_notifiers:
+            notifier.stop()
 
     def register_folder(self, path, watch=False):
         path = path_from_service(path, self.service)
@@ -91,7 +115,10 @@ class AppHTTPServer(object):
                 if base_url is None:
                     base_url = prefix_url
         if watch:
-            self.watchers.append(FileWatcher(path, self.service))
-            self.watchers[-1].start()
+            WATCH_MANAGER.add_watch(path, mask=IN_MODIFY, rec=True)
+            updater = FileSystemUpdater(path, self)
+            notifier = FileChangeNotifier(WATCH_MANAGER, updater)
+            self.watcher_notifiers.append(notifier)
+            self.watcher_notifiers[-1].start()
 
         return base_url.rstrip("/")
