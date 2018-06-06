@@ -28,9 +28,9 @@ def register_url(service, cur_file, path, mime=None, block=True):
     rel_path = os.path.relpath(cur_file, path)
     obj = encode_content(cur_file, service)
 
-    mime = mime or mimetypes.guess_type(cur_file)[0]
+    mime = mime or (mimetypes.guess_type(cur_file) or [None])[0]
     if not mime:
-        raise ValueError("Can't guess mime type. Please specify.")
+        mime = "application/octet-stream"
 
     url = service.rpc_client["register_view"](rel_path, obj, mime, _block=block)
 
