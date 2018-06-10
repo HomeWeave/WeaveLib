@@ -22,6 +22,5 @@ setup(
         'jsonschema',
         'netifaces',
         'psutil',
-        'watchdog'
     ]
 )
