@@ -2,9 +2,7 @@ import base64
 import inspect
 import mimetypes
 import os
-
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+from threading import Thread, Event
 
 
 mimetypes.init()
@@ -38,32 +36,37 @@ def register_url(service, cur_file, path, mime=None, block=True):
         return url[:-len(rel_path)], rel_path
 
 
-class FileSystemUpdater(FileSystemEventHandler):
-    def __init__(self, callback):
-        self.callback = callback
-
-    def on_modified(self, event):
-        if isinstance(event, FileModifiedEvent):
-            self.callback(event.src_path)
+def walk_folder(path, callback):
+    for cur_folder, _, files in os.walk(path):
+        for filename in files:
+            cur_file = os.path.join(cur_folder, filename)
+            callback(cur_file)
 
 
-class FileWatcher(Observer):
+
+class FileWatcher(Thread):
+    """ Super dumb way to inform AppManager to update the content of files."""
+
+    POLL_SECS = 5
+
     def __init__(self, base_path, service):
         super(FileWatcher, self).__init__()
         self.base_path = base_path
+        self.service = service
+        self.stop_event = Event()
 
-        def callback(path):
-            register_url(service, path, base_path)
+    def run(self):
+        while True:
+            walk_folder(self.base_path, self.process_path)
+            if self.stop_event.wait(timeout=self.POLL_SECS):
+                break
 
-        self.updater = FileSystemUpdater(callback)
-
-    def start(self):
-        self.schedule(self.updater, path=self.base_path, recursive=True)
-        super(FileWatcher, self).start()
+    def process_path(self, path):
+        register_url(self.service, path, self.base_path)
 
     def stop(self):
-        super(FileWatcher, self).stop()
-        super(FileWatcher, self).join()
+        self.stop_event.set()
+        self.join()
 
 
 class AppHTTPServer(object):
@@ -77,21 +80,20 @@ class AppHTTPServer(object):
     def stop(self):
         for watcher in self.watchers:
             watcher.stop()
-        for watcher in self.watchers:
-            watcher.join()
 
     def register_folder(self, path, watch=False):
         path = path_from_service(path, self.service)
-        base_url = None
-        for cur_folder, _, files in os.walk(path):
-            for filename in files:
-                cur_file = os.path.join(cur_folder, filename)
-                prefix_url, rel_url = register_url(self.service, cur_file, path)
+        base_url = [None]
 
-                if base_url is None:
-                    base_url = prefix_url
+        def process_file(file_path):
+            prefix_url, _ = register_url(self.service, file_path, path)
+            if base_url[0] is None:
+                base_url[0] = prefix_url
+
+        walk_folder(path, process_file)
+
         if watch:
             self.watchers.append(FileWatcher(path, self.service))
             self.watchers[-1].start()
 
-        return base_url.rstrip("/")
+        return base_url[0].rstrip("/")

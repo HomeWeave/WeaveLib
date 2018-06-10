@@ -5,7 +5,7 @@ from weaveserver.core.services import ServiceManager
 
 from weavelib.services import BaseService
 from weavelib.http import AppHTTPServer
-from weavelib.http.apphttp import path_from_service
+from weavelib.http.apphttp import path_from_service, FileWatcher
 
 
 AUTH = {
@@ -61,6 +61,8 @@ class TestAppHTTPServer(object):
         assert requests.get(url + "/folder/test.md").text == "hello world\n"
 
     def test_folder_watcher(self):
+        FileWatcher.POLL_SECS = 1
+
         path = path_from_service("static2/temp.txt", self.service)
 
         base_url = self.service.http.register_folder("static2", watch=True)
