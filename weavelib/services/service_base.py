@@ -8,6 +8,7 @@ BackgroundServiceStart mixin before BaseService while inheriting.
 import logging
 import os
 import subprocess
+import sys
 import threading
 from contextlib import suppress
 
@@ -169,7 +170,7 @@ class BackgroundProcessServiceStart(object):
 
     def child_process(self):
         name = '.'.join(self.__module__.split('.')[:-1])
-        command = ["weave-launch", name]
+        command = self.get_launch_command(name)
         self.service_proc = subprocess.Popen(command, env=os.environ.copy(),
                                              stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE,
@@ -186,9 +187,20 @@ class BackgroundProcessServiceStart(object):
             else:
                 logger.info("[%s]: %s", name, content)
 
+    def get_launch_command(self, name):
+        return ["weave-launch", name]
+
     def notify_start(self):
         name = '.'.join(self.__module__.split('.')[:-1])
         logger.info("SERVICE-STARTED-" + name)
 
     def wait_for_start(self, timeout):
         return self.started_event.wait(timeout)
+
+
+class BasePlugin(BackgroundProcessServiceStart, BaseService):
+    def get_launch_command(self, name):
+        package_root = self.__module__.split('.')[0]
+        py_file = sys.modules[package_root].__file__
+        base_dir = os.path.dirname(os.path.dirname(py_file))
+        return ["weave-launch", package_root, base_dir]
