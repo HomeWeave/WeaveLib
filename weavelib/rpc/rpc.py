@@ -260,7 +260,7 @@ class RPCClient(RPC):
 
 
 def get_rpc_caller():
-    for frame, _, _, func, _, _ in inspect.stack():
+    for frame, _, _, func, _, _ in inspect.stack(context=0):
         if func == 'execute_api_internal':
             if "headers" not in frame.f_locals:
                 continue
