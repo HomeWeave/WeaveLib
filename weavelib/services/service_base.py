@@ -46,27 +46,6 @@ def get_root_rpc_client(token):
                     },
                 ],
             },
-            "register_view": {
-                "name": "register_view",
-                "description": "",
-                "args": [
-                    {
-                        "name": "url",
-                        "description": "URL to register at.",
-                        "schema": {"type": "string"}
-                    },
-                    {
-                        "name": "content",
-                        "description": "Base64 encoded content.",
-                        "schema": {"type": "string"}
-                    },
-                    {
-                        "name": "mimetype",
-                        "description": "Mimetype of the content",
-                        "schema": {"type": "string"}
-                    }
-                ]
-            },
             "register_app": {
                 "name": "register_app",
                 "description": "",

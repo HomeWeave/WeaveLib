@@ -4,8 +4,41 @@ import mimetypes
 import os
 from threading import Thread, Event
 
+from weavelib.rpc import RPCClient
+
 
 mimetypes.init()
+
+
+HTTP_RPC_INFO = {
+    "name": "",
+    "description": "",
+    "apis": {
+        "register_view": {
+            "name": "register_view",
+            "description": "",
+            "args": [
+                {
+                    "name": "url",
+                    "description": "URL to register at.",
+                    "schema": {"type": "string"}
+                },
+                {
+                    "name": "content",
+                    "description": "Base64 encoded content.",
+                    "schema": {"type": "string"}
+                },
+                {
+                    "name": "mimetype",
+                    "description": "Mimetype of the content",
+                    "schema": {"type": "string"}
+                }
+            ]
+        },
+    },
+    "request_queue": "/_system/http/request",
+    "response_queue": "/_system/http/response",
+}
 
 
 def path_from_service(path, service):
@@ -22,7 +55,7 @@ def encode_content(path, service):
         return encoded.decode('ascii')
 
 
-def register_url(service, cur_file, path, mime=None, block=True):
+def register_url(service, client, cur_file, path, mime=None, block=True):
     rel_path = os.path.relpath(cur_file, path)
     obj = encode_content(cur_file, service)
 
@@ -30,7 +63,7 @@ def register_url(service, cur_file, path, mime=None, block=True):
     if not mime:
         mime = "application/octet-stream"
 
-    url = service.rpc_client["register_view"](rel_path, obj, mime, _block=block)
+    url = client["register_view"](rel_path, obj, mime, _block=block)
 
     if url and url.endswith(rel_path):
         return url[:-len(rel_path)], rel_path
@@ -41,7 +74,6 @@ def walk_folder(path, callback):
         for filename in files:
             cur_file = os.path.join(cur_folder, filename)
             callback(cur_file)
-
 
 
 class FileWatcher(Thread):
@@ -72,21 +104,24 @@ class FileWatcher(Thread):
 class AppHTTPServer(object):
     def __init__(self, service):
         self.service = service
+        self.rpc_client = RPCClient(HTTP_RPC_INFO, service.token)
         self.watchers = []
 
     def start(self):
-        pass
+        self.rpc_client.start()
 
     def stop(self):
         for watcher in self.watchers:
             watcher.stop()
+        self.rpc_client.stop()
 
     def register_folder(self, path, watch=False):
         path = path_from_service(path, self.service)
         base_url = [None]
 
         def process_file(file_path):
-            prefix_url, _ = register_url(self.service, file_path, path)
+            prefix_url, _ = register_url(self.service, self.rpc_client,
+                                         file_path, path)
             if base_url[0] is None:
                 base_url[0] = prefix_url
 
