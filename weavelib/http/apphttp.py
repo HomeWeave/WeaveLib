@@ -81,10 +81,11 @@ class FileWatcher(Thread):
 
     POLL_SECS = 5
 
-    def __init__(self, base_path, service):
+    def __init__(self, base_path, service, client):
         super(FileWatcher, self).__init__()
         self.base_path = base_path
         self.service = service
+        self.rpc_client = client
         self.stop_event = Event()
 
     def run(self):
@@ -94,7 +95,7 @@ class FileWatcher(Thread):
                 break
 
     def process_path(self, path):
-        register_url(self.service, path, self.base_path)
+        register_url(self.service, self.rpc_client, path, self.base_path)
 
     def stop(self):
         self.stop_event.set()
@@ -128,7 +129,8 @@ class AppHTTPServer(object):
         walk_folder(path, process_file)
 
         if watch:
-            self.watchers.append(FileWatcher(path, self.service))
+            self.watchers.append(FileWatcher(path, self.service,
+                                             self.rpc_client))
             self.watchers[-1].start()
 
         return base_url[0].rstrip("/")
