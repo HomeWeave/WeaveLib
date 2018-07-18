@@ -187,4 +187,4 @@ class BasePlugin(BackgroundProcessServiceStart, BaseService):
         package_root = self.__module__.split('.')[0]
         py_file = sys.modules[package_root].__file__
         base_dir = os.path.dirname(os.path.dirname(py_file))
-        return ["weave-launch", package_root, base_dir, self.venv_dir]
+        return ["weave-launch", base_dir, self.venv_dir]
