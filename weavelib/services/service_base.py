@@ -46,6 +46,17 @@ def get_root_rpc_client(token):
                     },
                 ],
             },
+            "register_plugin": {
+                "name": "register_plugin",
+                "description": "",
+                "args": [
+                    {
+                        "name": "plugin_info",
+                        "description": "",
+                        "schema": {"type": "object"}
+                    }
+                ]
+            },
             "register_app": {
                 "name": "register_app",
                 "description": "",
