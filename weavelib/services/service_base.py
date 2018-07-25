@@ -57,6 +57,17 @@ def get_root_rpc_client(token):
                     }
                 ]
             },
+            "unregister_plugin": {
+                "name": "unregister_plugin",
+                "description": "",
+                "args": [
+                    {
+                        "name": "token",
+                        "description": "",
+                        "schema": {"type": "string"}
+                    }
+                ]
+            },
             "register_app": {
                 "name": "register_app",
                 "description": "",
