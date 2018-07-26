@@ -39,7 +39,7 @@ class TestAppHTTPServer(object):
     def setup_class(cls):
         cls.service_manager = ServiceManager()
         cls.service_manager.apps.update(AUTH)
-        cls.service_manager.start_services(["messaging", "appmanager"])
+        cls.service_manager.start_services(["core", "http"])
 
         cls.service = DummyService("auth2")
         cls.service.service_start()
@@ -51,7 +51,7 @@ class TestAppHTTPServer(object):
 
     def test_register_folder(self):
         base_url = self.service.http.register_folder("static")
-        assert base_url == "/apps/appid2"
+        assert base_url == "/apps/p"
 
         url = "http://localhost:5000" + base_url
         assert requests.get(url + "/_status-card.json").json() == {}
@@ -66,7 +66,7 @@ class TestAppHTTPServer(object):
         path = path_from_service("static2/temp.txt", self.service)
 
         base_url = self.service.http.register_folder("static2", watch=True)
-        assert base_url == "/apps/appid2"
+        assert base_url == "/apps/p"
 
         url = "http://localhost:5000" + base_url
         assert requests.get(url + "/temp.txt").text == "temp\n"

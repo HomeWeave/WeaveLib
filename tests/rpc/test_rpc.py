@@ -79,7 +79,7 @@ class TestRPC(object):
     def setup_class(cls):
         cls.service_manager = ServiceManager()
         cls.service_manager.apps.update(AUTH)
-        cls.service_manager.start_services(["messaging", "appmanager"])
+        cls.service_manager.start_services(["core"])
 
     @classmethod
     def teardown_class(cls):
