@@ -21,6 +21,6 @@ setup(
     install_requires=[
         'jsonschema',
         'netifaces',
-        'psutil'
+        'psutil',
     ]
 )

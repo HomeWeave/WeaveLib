@@ -43,8 +43,7 @@ class TestAppDBConnection(object):
         os.environ["DB_PATH"] = NamedTemporaryFile(delete=False).name
         cls.service_manager = ServiceManager()
         cls.service_manager.apps.update(AUTH)
-        cls.service_manager.start_services(["messaging", "appmanager",
-                                            "simpledb"])
+        cls.service_manager.start_services(["core", "simpledb"])
 
         cls.service = DummyService("auth2")
         cls.service.service_start()
