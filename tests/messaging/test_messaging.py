@@ -82,7 +82,7 @@ class TestSyncMessenger(object):
     @classmethod
     def setup_class(cls):
         cls.service_manager = ServiceManager()
-        cls.service_manager.apps = AUTH
+        cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["core"])
 
         cls.start_echo_receiver("/dummy")
@@ -125,7 +125,7 @@ class TestCreator(object):
     @classmethod
     def setup_class(cls):
         cls.service_manager = ServiceManager()
-        cls.service_manager.apps = AUTH
+        cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["core"])
 
     @classmethod
