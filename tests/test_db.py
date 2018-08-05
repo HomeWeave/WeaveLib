@@ -13,11 +13,7 @@ configure_logging()
 
 AUTH = {
     "auth1": {
-        "type": "SYSTEM",
-        "appid": "appmgr"
-    },
-    "auth2": {
-        "appid": "appid2",
+        "appid": "auth1",
         "package": "p"
     }
 }
@@ -45,7 +41,7 @@ class TestAppDBConnection(object):
         cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["core", "simpledb"])
 
-        cls.service = DummyService("auth2")
+        cls.service = DummyService("auth1")
         cls.service.service_start()
 
     @classmethod
