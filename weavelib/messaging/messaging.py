@@ -3,8 +3,8 @@ import logging
 import socket
 from threading import Lock
 
-import weavelib.exceptions
-from weavelib.exceptions import WeaveException
+import weavelib
+from weavelib.exceptions import ProtocolError, WeaveException, ObjectClosed
 
 
 logger = logging.getLogger(__name__)
@@ -24,17 +24,17 @@ def parse_message(lines):
     for line in lines:
         line_parts = line.split(" ", 1)
         if len(line_parts) != 2:
-            raise weavelib.exceptions.ProtocolError("Bad message line.")
+            raise ProtocolError("Bad message line.")
         fields[line_parts[0]] = line_parts[1]
 
     if required_fields - set(fields.keys()):
-        raise weavelib.exceptions.ProtocolError("Required fields missing.")
+        raise ProtocolError("Required fields missing.")
 
     if "MSG" in fields:
         try:
             obj = json.loads(fields["MSG"])
         except json.decoder.JSONDecodeError:
-            raise weavelib.exceptions.ProtocolError("Bad JSON.")
+            raise ProtocolError("Bad JSON.")
         task = obj
         del fields["MSG"]
     else:
@@ -68,7 +68,7 @@ def read_message(conn):
             # If we have read a line at least, raise InvalidMessageStructure,
             # else IOError because mostly the socket was closed.
             if lines:
-                raise weavelib.exceptions.ProtocolError("Invalid message.")
+                raise ProtocolError("Invalid message.")
             else:
                 raise IOError
         if not stripped_line:
@@ -83,8 +83,8 @@ def write_message(conn, msg):
 
 
 def raise_message_exception(err, extra):
-    objects = [getattr(weavelib.exceptions, x)
-                  for x in dir(weavelib.exceptions)]
+    known_exceptions = weavelib.exceptions
+    objects = [getattr(known_exceptions, x) for x in dir(known_exceptions)]
     exceptions = [x for x in objects if isinstance(x, type)]
     known_exceptions = {x for x in exceptions if issubclass(x, WeaveException)}
     responses = {c().err_msg(): c for c in known_exceptions}
@@ -97,7 +97,7 @@ def raise_message_exception(err, extra):
 
 def ensure_ok_message(msg):
     if msg.op != "result" or "RES" not in msg.headers:
-        raise weavelib.exceptions.ProtocolError("Bad response.")
+        raise ProtocolError("Bad response.")
     raise_message_exception(msg.headers["RES"], msg.headers.get("ERRMSG"))
 
 
@@ -180,7 +180,7 @@ class Receiver(object):
         while self.active:
             try:
                 msg = self.receive()
-            except weavelib.exceptions.ObjectClosed:
+            except ObjectClosed:
                 logger.error("Queue closed: " + self.queue)
                 self.stop()
                 break
@@ -208,7 +208,7 @@ class Receiver(object):
             self.preprocess(msg)
             return msg
         if "RES" not in msg.headers:
-            raise weavelib.exceptions.ProtocolError("Bad response.")
+            raise ProtocolError("Bad response.")
         raise_message_exception(msg.headers["RES"], msg.headers.get("ERRMSG"))
 
     def stop(self):
