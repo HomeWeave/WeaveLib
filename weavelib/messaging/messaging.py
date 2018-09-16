@@ -1,7 +1,7 @@
 import json
 import logging
 import socket
-from threading import Lock
+from threading import Lock, Event
 
 import weavelib
 from weavelib.exceptions import ProtocolError, WeaveException, ObjectClosed
@@ -114,6 +114,76 @@ class Message(object):
     @property
     def task(self):
         return self.json
+
+
+class WeaveConnection(object):
+    def __init__(self, host="localhost", port=11023):
+        self.default_host = host
+        self.default_port = port
+        self.sock = None
+        self.rfile = None
+        self.wfile = None
+        self.readers_lock = Lock()
+        self.readers = {}
+        self.reader_thread = Thread(target=self.read_loop)
+        self.send_lock = Lock()
+        self.active = False
+
+    def connect(self):
+        self.sock = self.socket_connect()
+        self.rfile = self.sock.makefile('rb', self.READ_BUF_SIZE)
+        self.wfile = self.sock.makefile('wb', self.WRITE_BUF_SIZE)
+        self.active = True
+        self.reader_thread.start()
+
+    def send(self, msg):
+        with self.send_lock:
+            write_message(self.wfile, msg)
+
+    def register_receiver(self, queue, session_id, callback):
+        self.receive_message(queue, session_id)
+
+    def socket_connect(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((self.default_host, self.default_port))
+            return sock
+        except IOError:
+            sock.close()
+
+        discovery_result = discover_message_server()
+        if discovery_result is None:
+            raise WeaveException("Unable to connect to Server.")
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect(discovery_result)
+            return sock
+        except IOError:
+            sock.close()
+            raise WeaveException("Unable to connect to Server.")
+
+    def read_loop(self):
+        while self.active:
+            msg = read_message(self.rfile)
+            session_id = msg.headers.get("SESS")
+            receiver = self.readers.get(session_id)
+            if receiver is None:
+                continue
+
+            # TODO: Should be done outside of queue.
+            try:
+                receiver(msg)
+            except Exception:
+                logger.exception("Exception while processing in receiver.")
+                continue
+
+
+
+
+
+    def close(self):
+        self.active = False
 
 
 class Sender(object):
