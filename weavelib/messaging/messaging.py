@@ -294,7 +294,8 @@ class Receiver(object):
     def receive(self):
         response = self.conn.read_message(self.prepare_receive_message(),
                                             self.session_id)
-        return self.preprocess(response)
+        self.preprocess(response)
+        return response
 
     def prepare_receive_message(self):
         dequeue_msg = Message("dequeue")
@@ -306,15 +307,15 @@ class Receiver(object):
         self.active = True
         while self.active:
             try:
-                self.on_message(self.receive())
+                msg = self.receive()
+                self.on_message(msg.task, msg.headers)
             except ObjectClosed:
                 logger.error("Queue closed: " + self.queue)
                 self.stop()
                 break
 
     def stop(self):
-        # TODO: Unregister from connection.
-        pass
+        self.active = False
 
     def preprocess(self, msg):
         if "AUTH" in msg.headers:
