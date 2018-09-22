@@ -118,6 +118,8 @@ class Message(object):
 
 
 class MessageWaiter(object):
+    CONNECTION_CLOSED = object()
+
     def __init__(self):
         self.msg = None
         self.event = Event()
@@ -125,6 +127,8 @@ class MessageWaiter(object):
     @property
     def message(self):
         self.event.wait()
+        if self.msg is self.CONNECTION_CLOSED:
+            raise IOError("Connection closed.")
         return self.msg
 
     @message.setter
@@ -135,6 +139,9 @@ class MessageWaiter(object):
     def clear(self):
         self.msg = None
         self.event.clear()
+
+    def close(self):
+        self.message = self.CONNECTION_CLOSED
 
 
 class WeaveConnection(object):
@@ -225,6 +232,7 @@ class WeaveConnection(object):
                 msg = read_message(self.rfile)
             except IOError:
                 logger.error("Connection closed. Stopping reading.")
+                self.close()
                 break
             session_id = msg.headers.get("SESS")
             waiter = self.readers.get(session_id)
@@ -241,6 +249,9 @@ class WeaveConnection(object):
 
     def close(self):
         self.active = False
+        for waiter in self.readers.values():
+            waiter.close()
+
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
         except Exception:
