@@ -77,8 +77,8 @@ class RPC(object):
 
 
 class RPCReceiver(Receiver):
-    def __init__(self, component, queue, host="localhost", **kwargs):
-        super(RPCReceiver, self).__init__(queue, host=host, **kwargs)
+    def __init__(self, conn, component, queue, host="localhost", **kwargs):
+        super(RPCReceiver, self).__init__(conn, queue, host=host, **kwargs)
         self.component = component
 
     def on_message(self, msg, headers):
@@ -88,8 +88,9 @@ class RPCReceiver(Receiver):
 class RPCServer(RPC):
     MAX_RPC_WORKERS = 5
 
-    def __init__(self, name, description, apis, service):
+    def __init__(self, name, description, apis, service, conn):
         self.service = service
+        self.conn = conn
         super(RPCServer, self).__init__(name, description, apis)
         self.executor = ThreadPoolExecutor(self.MAX_RPC_WORKERS)
         self.sender = None
@@ -104,9 +105,9 @@ class RPCServer(RPC):
 
     def start(self):
         rpc_info = self.register_rpc()
-        self.sender = Sender(rpc_info["response_queue"],
+        self.sender = Sender(self.conn, rpc_info["response_queue"],
                              auth=self.service.auth_token)
-        self.receiver = RPCReceiver(self, rpc_info["request_queue"],
+        self.receiver = RPCReceiver(self.conn, self, rpc_info["request_queue"],
                                     auth=self.service.auth_token)
 
         self.sender.start()
@@ -185,7 +186,7 @@ class RPCServer(RPC):
 
 
 class RPCClient(RPC):
-    def __init__(self, rpc_info, token=None):
+    def __init__(self, conn, rpc_info, token=None):
         self.token = token
         name = rpc_info["name"]
         description = rpc_info["description"]
@@ -193,8 +194,8 @@ class RPCClient(RPC):
         super(RPCClient, self).__init__(name, description, apis)
 
         self.client_cookie = "rpc-client-cookie-" + str(uuid4())
-        self.sender = Sender(rpc_info["request_queue"], auth=self.token)
-        self.receiver = RPCReceiver(self, rpc_info["response_queue"],
+        self.sender = Sender(conn, rpc_info["request_queue"], auth=self.token)
+        self.receiver = RPCReceiver(conn, self, rpc_info["response_queue"],
                                     cookie=self.client_cookie)
         self.receiver_thread = Thread(target=self.receiver.run)
 

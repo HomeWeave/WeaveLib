@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from weaveserver.core.services import ServiceManager
 
+from weavelib.messaging import WeaveConnection
 from weavelib.rpc import RPCClient, RPCServer, ServerAPI, get_rpc_caller
 from weavelib.rpc import ArgParameter, KeywordParameter, RemoteAPIError
 from weavelib.services import BaseService
@@ -29,7 +30,7 @@ AUTH = {
 
 
 class DummyService(BaseService):
-    def __init__(self, token):
+    def __init__(self, conn, token):
         apis = [
             ServerAPI("api1", "desc1", [
                 ArgParameter("p1", "d1", str),
@@ -40,7 +41,7 @@ class DummyService(BaseService):
             ServerAPI("api3", "desc3", [], self.api3),
             ServerAPI("exception", "desc2", [], self.exception)
         ]
-        self.rpc_server = RPCServer("name", "desc", apis, self)
+        self.rpc_server = RPCServer(conn, "name", "desc", apis, self)
         self.paused = False
         super(DummyService, self).__init__(token)
 
@@ -81,12 +82,15 @@ class TestRPC(object):
         cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["core"])
 
+        cls.conn = WeaveConnection()
+        cls.conn.connect()
+
     @classmethod
     def teardown_class(cls):
         cls.service_manager.stop()
 
     def setup_method(self):
-        self.service = DummyService("auth2")
+        self.service = DummyService(self.conn, "auth2")
         self.service.service_start()
 
     def teardown_method(self):
@@ -94,7 +98,7 @@ class TestRPC(object):
 
     def test_server_function_invoke(self):
         info = self.service.rpc_server.info_message
-        client = RPCClient(info)
+        client = RPCClient(self.conn, info)
         client.start()
 
         res = client["api1"]("hello", 5, k3=False, _block=True)
@@ -105,7 +109,7 @@ class TestRPC(object):
     @pytest.mark.skip(reason="Fails.")
     def test_with_different_client(self):
         info = self.service.rpc_server.info_message
-        client = RPCClient(info)
+        client = RPCClient(self.conn, info)
         client.start()
 
         res = client["api1"]("hello", 5, k3=False, _block=True)
@@ -113,7 +117,7 @@ class TestRPC(object):
 
         client.stop()
 
-        client = RPCClient(info)
+        client = RPCClient(self.conn, info)
         client.start()
 
         res = client["api1"]("hello", 5, k3=False, _block=True)
@@ -127,7 +131,7 @@ class TestRPC(object):
 
         self.service.paused = True
 
-        client = RPCClient(info)
+        client = RPCClient(self.conn, info)
         client.start()
         api1 = client["api1"]
         api2 = client["api2"]
@@ -153,7 +157,7 @@ class TestRPC(object):
 
     def test_callback_rpc_invoke(self):
         info = self.service.rpc_server.info_message
-        client = RPCClient(info)
+        client = RPCClient(self.conn, info)
         client.start()
 
         event = Event()
@@ -173,7 +177,7 @@ class TestRPC(object):
 
     def test_rpc_caller(self):
         info = self.service.rpc_server.info_message
-        client = RPCClient(info, token="auth2")
+        client = RPCClient(self.conn, info, token="auth2")
         client.start()
 
         res = client["api3"](_block=True)
@@ -183,7 +187,7 @@ class TestRPC(object):
 
     def test_api_with_exception(self):
         info = self.service.rpc_server.info_message
-        client = RPCClient(info)
+        client = RPCClient(self.conn, info)
         client.start()
 
         with pytest.raises(RemoteAPIError):

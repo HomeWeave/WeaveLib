@@ -14,13 +14,14 @@ from contextlib import suppress
 
 import psutil
 
+from weavelib.messaging import WeaveConnection
 from weavelib.rpc import RPCClient
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_root_rpc_client(token):
+def get_root_rpc_client(conn, token):
     root_rpc_info = {
         "name": "",
         "description": "",
@@ -94,13 +95,13 @@ def get_root_rpc_client(token):
         "response_queue": "/_system/root_rpc/response"
     }
 
-    return RPCClient(root_rpc_info, token)
+    return RPCClient(conn, root_rpc_info, token)
 
 
 class BaseService(object):
     """ Starts the service in the current thread. """
     def __init__(self, token):
-        self.rpc_client = get_root_rpc_client(token)
+        self.rpc_client = None
         self.token = token
 
     def service_start(self):
@@ -111,6 +112,10 @@ class BaseService(object):
         self.on_service_stop()
 
     def before_service_start(self):
+        conn = WeaveConnection()
+        conn.connect()
+
+        self.rpc_client = get_root_rpc_client(conn, self.token)
         self.rpc_client.start()
         self.rpc_client["register_app"](_block=True)
 
