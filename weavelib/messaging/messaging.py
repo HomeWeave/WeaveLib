@@ -293,7 +293,7 @@ class Receiver(object):
 
     def receive(self):
         response = self.conn.read_message(self.prepare_receive_message(),
-                                            self.session_id)
+                                          self.session_id)
         self.preprocess(response)
         return response
 
