@@ -301,6 +301,7 @@ class Receiver(object):
         dequeue_msg = Message("dequeue")
         dequeue_msg.headers["SESS"] = self.session_id
         dequeue_msg.headers["Q"] = self.queue
+        dequeue_msg.headers.update(self.extra_headers)
         return dequeue_msg
 
     def run(self):
