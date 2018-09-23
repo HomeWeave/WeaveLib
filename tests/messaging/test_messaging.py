@@ -5,7 +5,7 @@ import pytest
 import weavelib.netutils as netutils
 from weavelib.exceptions import AuthenticationFailed, ProtocolError
 from weavelib.messaging import discover_message_server, Sender
-from weavelib.messaging import Receiver, SyncMessenger, Creator
+from weavelib.messaging import Receiver, Creator
 
 from weaveserver.services.discovery import DiscoveryService
 from weaveserver.services.discovery.service import DiscoveryServer
@@ -76,49 +76,6 @@ class TestDiscoverMessageServer(object):
             assert discover_message_server()[0] in ip_addresses
         finally:
             service.on_service_stop()
-
-
-class TestSyncMessenger(object):
-    @classmethod
-    def setup_class(cls):
-        cls.service_manager = ServiceManager()
-        cls.service_manager.apps.update(AUTH)
-        cls.service_manager.start_services(["core"])
-
-        cls.start_echo_receiver("/dummy")
-
-    @classmethod
-    def teardown_class(cls):
-        cls.service_manager.stop()
-
-    @classmethod
-    def start_echo_receiver(cls, queue):
-        creator = Creator(auth="auth1")
-        creator.start()
-        creator.create({
-            "queue_name": queue,
-            "request_schema": {"type": "object"}
-        })
-
-        sender = Sender(queue)
-        sender.start()
-
-        def reply(msg, headers):
-            sender.send(msg)
-
-        receiver = Receiver(queue)
-        receiver.on_message = reply
-        receiver.start()
-
-    def test_send_sync(self):
-        obj = {"test": "test-messsage", "arr": [1, 2, 3]}
-
-        sync = SyncMessenger("/dummy")
-        sync.start()
-
-        assert obj == sync.send(obj).task
-
-        sync.stop()
 
 
 class TestCreator(object):

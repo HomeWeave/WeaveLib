@@ -340,41 +340,6 @@ class Receiver(object):
         pass
 
 
-class SyncMessenger(object):
-    PORT = 11023
-    READ_BUF_SIZE = -1
-    WRITE_BUF_SIZE = 10240
-
-    def __init__(self, queue, host="localhost", **kwargs):
-        self.queue = queue
-        self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
-        self.host = host
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.active = False
-        raise NotImplementedError
-
-    def start(self):
-        self.sock.connect((self.host, self.PORT))
-        self.rfile = self.sock.makefile('rb', self.READ_BUF_SIZE)
-        self.wfile = self.sock.makefile('wb', self.WRITE_BUF_SIZE)
-
-    def send(self, obj):
-        msg = Message("enqueue", obj)
-        msg.headers.update(self.extra_headers)
-        msg.headers["Q"] = self.queue
-
-        write_message(self.wfile, msg)
-        msg = read_message(self.rfile)
-        ensure_ok_message(msg)
-        return Receiver.receive(self)
-
-    def preprocess(self, msg):
-        return Receiver.preprocess(self, msg)
-
-    def stop(self):
-        Receiver.stop(self)
-
-
 class Creator(object):
     def __init__(self, conn, **kwargs):
         self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
