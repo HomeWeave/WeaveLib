@@ -149,9 +149,10 @@ class WeaveConnection(object):
     READ_BUF_SIZE = -1
     WRITE_BUF_SIZE = 10240
 
-    def __init__(self, host="localhost", port=PORT):
+    def __init__(self, host="localhost", port=PORT, local_only=False):
         self.default_host = host
         self.default_port = port
+        self.local_only = local_only
         self.sock = None
         self.rfile = None
         self.wfile = None
@@ -160,6 +161,10 @@ class WeaveConnection(object):
         self.reader_thread = Thread(target=self.read_loop)
         self.send_lock = Lock()
         self.active = False
+
+    @staticmethod
+    def local():
+        return WeaveConnection(local_only=True)
 
     def connect(self):
         self.sock = self.socket_connect()
