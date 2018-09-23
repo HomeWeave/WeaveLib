@@ -103,6 +103,7 @@ class BaseService(object):
     def __init__(self, token):
         self.rpc_client = None
         self.token = token
+        self.conn = WeaveConnection()
 
     def service_start(self):
         self.before_service_start()
@@ -112,10 +113,9 @@ class BaseService(object):
         self.on_service_stop()
 
     def before_service_start(self):
-        conn = WeaveConnection()
-        conn.connect()
+        self.conn.connect()
 
-        self.rpc_client = get_root_rpc_client(conn, self.token)
+        self.rpc_client = get_root_rpc_client(self.conn, self.token)
         self.rpc_client.start()
         self.rpc_client["register_app"](_block=True)
 
