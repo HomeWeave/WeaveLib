@@ -125,7 +125,6 @@ class TestRPC(object):
 
         client.stop()
 
-
     def test_several_functions_invoke(self):
         info = self.service.rpc_server.info_message
 

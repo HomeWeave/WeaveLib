@@ -92,7 +92,6 @@ class TestCreator(object):
     def teardown_class(cls):
         cls.conn.close()
         cls.service_manager.stop()
-        import faulthandler; faulthandler.dump_traceback()
 
     def test_create_without_auth(self):
         creator = Creator(self.conn)
