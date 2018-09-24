@@ -101,9 +101,9 @@ def get_root_rpc_client(conn, token):
 class BaseService(object):
     """ Starts the service in the current thread. """
     def __init__(self, token):
-        self.rpc_client = None
         self.token = token
         self.conn = WeaveConnection()
+        self.rpc_client = get_root_rpc_client(self.conn, self.token)
 
     def service_start(self):
         self.before_service_start()
@@ -115,7 +115,6 @@ class BaseService(object):
     def before_service_start(self):
         self.conn.connect()
 
-        self.rpc_client = get_root_rpc_client(self.conn, self.token)
         self.rpc_client.start()
         self.rpc_client["register_app"](_block=True)
 
