@@ -247,10 +247,14 @@ class WeaveConnection(object):
                 continue
 
             # TODO: This blocks reading loop when receiver callback is slow.
-            try:
-                waiter.message = msg
-            except Exception:
-                logger.exception("Exception while processing in receiver.")
+            waiter.message = msg
+
+    def interrupt_session(self, session_id):
+        with self.readers_lock:
+            waiter = self.readers.get(session_id)
+            if waiter is None:
+                return
+            waiter.close()
 
     def close(self):
         self.active = False
@@ -326,6 +330,10 @@ class Receiver(object):
             try:
                 msg = self.receive()
                 self.on_message(msg.task, msg.headers)
+            except IOError:
+                if not self.active:
+                    return
+                raise
             except ObjectClosed:
                 logger.error("Queue closed: " + self.queue)
                 self.stop()
@@ -333,6 +341,7 @@ class Receiver(object):
 
     def stop(self):
         self.active = False
+        self.conn.interrupt_session(self.session_id)
 
     def preprocess(self, msg):
         if "AUTH" in msg.headers:
