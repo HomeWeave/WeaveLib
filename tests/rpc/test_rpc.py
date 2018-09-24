@@ -106,7 +106,6 @@ class TestRPC(object):
 
         client.stop()
 
-    @pytest.mark.skip(reason="Fails.")
     def test_with_different_client(self):
         info = self.service.rpc_server.info_message
         client = RPCClient(self.conn, info)
