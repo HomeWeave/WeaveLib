@@ -3,6 +3,10 @@ import logging
 import socket
 from threading import Lock, Event, Thread
 from uuid import uuid4
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 import weavelib
 from weavelib.exceptions import ProtocolError, WeaveException, ObjectClosed
@@ -121,24 +125,18 @@ class MessageWaiter(object):
     CONNECTION_CLOSED = object()
 
     def __init__(self):
-        self.msg = None
-        self.event = Event()
+        self.queue = Queue()
 
     @property
     def message(self):
-        self.event.wait()
-        if self.msg is self.CONNECTION_CLOSED:
+        item = self.queue.get()
+        if item is self.CONNECTION_CLOSED:
             raise IOError("Connection closed.")
-        return self.msg
+        return item
 
     @message.setter
     def message(self, msg):
-        self.msg = msg
-        self.event.set()
-
-    def clear(self):
-        self.msg = None
-        self.event.clear()
+        self.queue.put(msg)
 
     def close(self):
         self.message = self.CONNECTION_CLOSED
@@ -203,7 +201,6 @@ class WeaveConnection(object):
 
         self.send_internal(msg)
         response = waiter.message
-        waiter.clear()
         ensure_ok_message(response)
         return response
 
@@ -217,7 +214,6 @@ class WeaveConnection(object):
 
         self.send_internal(msg)
         response = waiter.message
-        waiter.clear()
 
         if response.op == "inform":
             return response
@@ -246,7 +242,6 @@ class WeaveConnection(object):
                                serialize_message(msg))
                 continue
 
-            # TODO: This blocks reading loop when receiver callback is slow.
             waiter.message = msg
 
     def interrupt_session(self, session_id):
