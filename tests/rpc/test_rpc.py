@@ -41,7 +41,7 @@ class DummyService(BaseService):
             ServerAPI("api3", "desc3", [], self.api3),
             ServerAPI("exception", "desc2", [], self.exception)
         ]
-        self.rpc_server = RPCServer(conn, "name", "desc", apis, self)
+        self.rpc_server = RPCServer("name", "desc", apis, self, conn)
         self.paused = False
         super(DummyService, self).__init__(token)
 
