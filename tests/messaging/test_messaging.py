@@ -92,6 +92,7 @@ class TestCreator(object):
     def teardown_class(cls):
         cls.conn.close()
         cls.service_manager.stop()
+        cls.service_manager.wait()
 
     def test_create_without_auth(self):
         creator = Creator(self.conn)

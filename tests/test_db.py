@@ -54,6 +54,7 @@ class TestAppDBConnection(object):
         cls.conn.close()
 
         cls.service_manager.stop()
+        cls.service_manager.wait()
         os.unlink(os.environ["DB_PATH"])
         del os.environ["DB_PATH"]
 

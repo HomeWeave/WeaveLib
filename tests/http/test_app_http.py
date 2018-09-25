@@ -54,6 +54,7 @@ class TestAppHTTPServer(object):
         cls.conn.close()
 
         cls.service_manager.stop()
+        cls.service_manager.wait()
 
     def test_register_folder(self):
         base_url = self.service.http.register_folder("static")

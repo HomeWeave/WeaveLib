@@ -88,6 +88,7 @@ class TestRPC(object):
     @classmethod
     def teardown_class(cls):
         cls.service_manager.stop()
+        cls.service_manager.wait()
 
     def setup_method(self):
         self.service = DummyService(self.conn, "auth2")
