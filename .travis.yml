@@ -7,6 +7,7 @@ install:
 
 before_script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)
+  - sed -i "s/WeaveServer.git/WeaveServer.git@$TRAVIS_BRANCH/g" dev-requirements.txt
   - pip install -r dev-requirements.txt
 
 script:

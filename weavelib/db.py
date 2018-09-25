@@ -3,7 +3,8 @@ from weavelib.rpc import RPCClient
 
 
 class AppDBConnection(object):
-    def __init__(self, service):
+    def __init__(self, conn, service):
+        self.conn = conn
         self.service = service
         self.db_rpc = None
 
@@ -11,7 +12,7 @@ class AppDBConnection(object):
         rpc = self.service.rpc_client["rpc_info"]
         rpc_info = rpc("weaveserver.services.simpledb", "object_store",
                        _block=True)
-        self.db_rpc = RPCClient(rpc_info, self.service.token)
+        self.db_rpc = RPCClient(self.conn, rpc_info, self.service.token)
         self.db_rpc.start()
 
     def stop(self):

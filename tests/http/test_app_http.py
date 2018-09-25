@@ -3,9 +3,10 @@ import time
 import requests
 from weaveserver.core.services import ServiceManager
 
-from weavelib.services import BaseService
 from weavelib.http import AppHTTPServer
 from weavelib.http.apphttp import path_from_service, FileWatcher
+from weavelib.messaging import WeaveConnection
+from weavelib.services import BaseService
 
 
 AUTH = {
@@ -21,9 +22,9 @@ AUTH = {
 
 
 class DummyService(BaseService):
-    def __init__(self, token):
+    def __init__(self, conn, token):
         super(DummyService, self).__init__(token)
-        self.http = AppHTTPServer(self)
+        self.http = AppHTTPServer(conn, self)
 
     def on_service_start(self):
         super(DummyService, self).on_service_start()
@@ -41,13 +42,19 @@ class TestAppHTTPServer(object):
         cls.service_manager.apps.update(AUTH)
         cls.service_manager.start_services(["core", "http"])
 
-        cls.service = DummyService("auth2")
+        cls.conn = WeaveConnection.local()
+        cls.conn.connect()
+
+        cls.service = DummyService(cls.conn, "auth2")
         cls.service.service_start()
 
     @classmethod
     def teardown_class(cls):
         cls.service.service_stop()
+        cls.conn.close()
+
         cls.service_manager.stop()
+        cls.service_manager.wait()
 
     def test_register_folder(self):
         base_url = self.service.http.register_folder("static")
