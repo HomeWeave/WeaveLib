@@ -103,9 +103,9 @@ class FileWatcher(Thread):
 
 
 class AppHTTPServer(object):
-    def __init__(self, service):
+    def __init__(self, conn, service):
         self.service = service
-        self.rpc_client = RPCClient(HTTP_RPC_INFO, service.token)
+        self.rpc_client = RPCClient(conn, HTTP_RPC_INFO, service.token)
         self.watchers = []
 
     def start(self):
