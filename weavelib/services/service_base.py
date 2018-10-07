@@ -204,6 +204,7 @@ class BackgroundProcessServiceStart(object):
 
 
 class BasePlugin(BackgroundProcessServiceStart, BaseService):
+    """ To be used by plugins loaded by WeaveServer (on the same machine)."""
     def __init__(self, token, config, venv_dir):
         super(BasePlugin, self).__init__(token)
         self.venv_dir = venv_dir
@@ -214,3 +215,7 @@ class BasePlugin(BackgroundProcessServiceStart, BaseService):
         py_file = sys.modules[package_root].__file__
         base_dir = os.path.dirname(os.path.dirname(py_file))
         return ["weave-launch", base_dir, self.venv_dir]
+
+
+class RemotePlugin(BaseService):
+    """ To be used by plugins on remote machines."""
