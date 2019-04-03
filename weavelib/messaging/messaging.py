@@ -147,10 +147,10 @@ class WeaveConnection(object):
     READ_BUF_SIZE = -1
     WRITE_BUF_SIZE = 10240
 
-    def __init__(self, host="localhost", port=PORT, local_only=False):
+    def __init__(self, host="localhost", port=PORT, auto_discover=True):
         self.default_host = host
         self.default_port = port
-        self.local_only = local_only
+        self.auto_discover = auto_discover
         self.sock = None
         self.rfile = None
         self.wfile = None
@@ -162,7 +162,16 @@ class WeaveConnection(object):
 
     @staticmethod
     def local():
-        return WeaveConnection(local_only=True)
+        return WeaveConnection(auto_discover=False)
+
+    @staticmethod
+    def discover():
+        result = discover_message_server()
+        if not result:
+            raise WeaveException("Unable to discover server.")
+
+        host, port = result
+        return WeaveConnection(host, port, auto_discover=False)
 
     def connect(self):
         self.sock = self.socket_connect()
@@ -178,6 +187,9 @@ class WeaveConnection(object):
             return sock
         except IOError:
             sock.close()
+
+        if not self.auto_discover:
+            raise WeaveException("Unable to connect to the Server.")
 
         discovery_result = discover_message_server()
         if discovery_result is None:
