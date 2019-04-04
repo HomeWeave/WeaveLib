@@ -132,6 +132,7 @@ class MessagingEnabled(BaseService):
     def __init__(self, **kwargs):
         self.conn = kwargs.pop('conn')
         self.auth_token = kwargs.pop('auth_token')
+        super(MessagingEnabled, self).__init__(**kwargs)
 
     def get_auth_token(self):
         return self.auth_token
