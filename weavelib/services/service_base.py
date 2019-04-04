@@ -14,96 +14,14 @@ from contextlib import suppress
 
 import psutil
 
-from weavelib.messaging import WeaveConnection
-from weavelib.rpc import RPCClient
-
 
 logger = logging.getLogger(__name__)
 
 
-def get_root_rpc_client(conn, token):
-    root_rpc_info = {
-        "name": "",
-        "description": "",
-        "apis": {
-            "register_rpc": {
-                "name": "register_rpc",
-                "description": "",
-                "args": [
-                    {
-                        "name": "name",
-                        "description": "Name of RPC",
-                        "schema": {"type": "string"}
-                    },
-                    {
-                        "name": "description",
-                        "description": "Description of RPC",
-                        "schema": {"type": "string"}
-                    },
-                    {
-                        "name": "apis",
-                        "description": "Map of all APIs",
-                        "schema": {"type": "object"}
-                    },
-                ],
-            },
-            "register_plugin": {
-                "name": "register_plugin",
-                "description": "",
-                "args": [
-                    {
-                        "name": "plugin_info",
-                        "description": "",
-                        "schema": {"type": "object"}
-                    }
-                ]
-            },
-            "unregister_plugin": {
-                "name": "unregister_plugin",
-                "description": "",
-                "args": [
-                    {
-                        "name": "token",
-                        "description": "",
-                        "schema": {"type": "string"}
-                    }
-                ]
-            },
-            "register_app": {
-                "name": "register_app",
-                "description": "",
-                "args": [],
-            },
-            "rpc_info": {
-                "name": "rpc_info",
-                "description": "",
-                "args": [
-                    {
-                        "name": "package_name",
-                        "description": "",
-                        "schema": {"type": "string"},
-                    },
-                    {
-                        "name": "rpc_name",
-                        "description": "",
-                        "schema": {"type": "string"},
-                    }
-                ]
-            }
-        },
-        "request_queue": "/_system/root_rpc/request",
-        "response_queue": "/_system/root_rpc/response"
-    }
-
-    return RPCClient(conn, root_rpc_info, token)
-
-
 class BaseService(object):
     """ Starts the service in the current thread. """
-    def __init__(self, token):
-        self.token = token
-        self.conn = WeaveConnection()
-        self.rpc_client = get_root_rpc_client(self.conn, self.token)
+    def __init__(selfi, **kwargs):
+        pass
 
     def service_start(self):
         self.before_service_start()
@@ -113,12 +31,9 @@ class BaseService(object):
         self.on_service_stop()
 
     def before_service_start(self):
-        self.conn.connect()
+        pass
 
-        self.rpc_client.start()
-        self.rpc_client["register_app"](_block=True)
-
-    def on_service_start(self, *args, **kwargs):
+    def on_service_start(self):
         pass
 
     def on_service_stop(self):
@@ -129,10 +44,6 @@ class BaseService(object):
 
     def notify_start(self):
         pass
-
-    @property
-    def auth_token(self):
-        return self.token
 
 
 class BackgroundThreadServiceStart(object):
@@ -158,7 +69,12 @@ class BackgroundThreadServiceStart(object):
         self.started_event.set()
 
 
-class BackgroundProcessServiceStart(object):
+class BasePlugin(BaseService):
+    """ To be used by plugins loaded by WeaveServer (on the same machine)."""
+    def __init__(self, **kwargs):
+        self.venv_dir = kwargs.pop('venv_dir')
+        super(BasePlugin, self).__init__(**kwargs)
+
     def service_start(self):
         self.started_event = threading.Event()
         self.child_thread = threading.Thread(target=self.child_process)
@@ -182,8 +98,7 @@ class BackgroundProcessServiceStart(object):
                                              stderr=subprocess.STDOUT)
         self.service_pid = self.service_proc.pid
 
-        self.service_proc.stdin.write((self.auth_token + "\n").encode())
-        self.service_proc.stdin.flush()
+        self.write_token(self.serice_proc.stdin, self.get_auth_token())
 
         for line in iter(self.service_proc.stdout.readline, b''):
             content = line.strip().decode()
@@ -192,9 +107,6 @@ class BackgroundProcessServiceStart(object):
             else:
                 logger.info("[%s]: %s", name, content)
 
-    def get_launch_command(self, name):
-        return ["weave-launch", name]
-
     def notify_start(self):
         name = '.'.join(self.__module__.split('.')[:-1])
         logger.info("SERVICE-STARTED-" + name)
@@ -202,20 +114,24 @@ class BackgroundProcessServiceStart(object):
     def wait_for_start(self, timeout):
         return self.started_event.wait(timeout)
 
-
-class BasePlugin(BackgroundProcessServiceStart, BaseService):
-    """ To be used by plugins loaded by WeaveServer (on the same machine)."""
-    def __init__(self, token, config, venv_dir):
-        super(BasePlugin, self).__init__(token)
-        self.venv_dir = venv_dir
-        self.config = config
-
     def get_launch_command(self, name):
         package_root = self.__module__.split('.')[0]
         py_file = sys.modules[package_root].__file__
         base_dir = os.path.dirname(os.path.dirname(py_file))
         return ["weave-launch", base_dir, self.venv_dir]
 
+    def write_auth_token(self, file_handle, token):
+        file_handle.write((token + "\n").encode())
+        file_handle.flush()
 
-class RemotePlugin(BaseService):
-    """ To be used by plugins on remote machines."""
+    def get_auth_token(self):
+        return ""
+
+
+class MessagingEnabled(BaseService):
+    def __init__(self, **kwargs):
+        self.conn = kwargs.pop('conn')
+        self.auth_token = kwargs.pop('auth_token')
+
+    def get_auth_token(self):
+        return self.auth_token
