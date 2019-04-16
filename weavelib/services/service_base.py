@@ -130,9 +130,13 @@ class BasePlugin(BaseService):
 
 class MessagingEnabled(BaseService):
     def __init__(self, **kwargs):
+        # Remember to keep MessagingService __init__ consistent.
         self.conn = kwargs.pop('conn')
         self.auth_token = kwargs.pop('auth_token')
         super(MessagingEnabled, self).__init__(**kwargs)
 
     def get_auth_token(self):
         return self.auth_token
+
+    def get_connection(self):
+        return self.conn

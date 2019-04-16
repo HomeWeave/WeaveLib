@@ -88,10 +88,12 @@ class RPCReceiver(Receiver):
 class RPCServer(RPC):
     MAX_RPC_WORKERS = 5
 
-    def __init__(self, name, description, apis, service, conn):
-        self.service = service
-        self.conn = conn
+    def __init__(self, name, description, apis, service):
+        if not isinstance(service, MessagingEnabled):
+            raise BadArguments("Service is not messaging enabled.")
+
         super(RPCServer, self).__init__(name, description, apis)
+        self.service = service
         self.executor = ThreadPoolExecutor(self.MAX_RPC_WORKERS)
         self.sender = None
         self.receiver = None
@@ -104,11 +106,12 @@ class RPCServer(RPC):
             self.name, self.description, apis, _block=True)
 
     def start(self):
+        conn = self.service.get_connection()
+        auth_token = self.service.get_auth_token()
         rpc_info = self.register_rpc()
-        self.sender = Sender(self.conn, rpc_info["response_queue"],
-                             auth=self.service.auth_token)
-        self.receiver = RPCReceiver(self.conn, self, rpc_info["request_queue"],
-                                    auth=self.service.auth_token)
+        self.sender = Sender(conn, rpc_info["response_queue"], auth=auth_token)
+        self.receiver = RPCReceiver(conn, self, rpc_info["request_queue"],
+                                    auth=auth_token)
 
         self.sender.start()
         self.receiver.start()
