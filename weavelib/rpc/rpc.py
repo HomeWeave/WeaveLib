@@ -9,6 +9,7 @@ from jsonschema import Draft4Validator
 from weavelib.messaging import Sender, Receiver, Creator
 from weavelib.messaging.messaging import raise_message_exception
 from weavelib.exceptions import WeaveException
+from weavelib.services import MessagingEnabled
 from .api import API, ArgParameter, KeywordParameter
 
 
