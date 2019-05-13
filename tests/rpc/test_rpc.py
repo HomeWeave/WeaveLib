@@ -17,18 +17,6 @@ from weaveserver.core.logger import configure_logging
 configure_logging()
 
 
-AUTH = {
-    "auth1": {
-        "type": "SYSTEM",
-        "appid": "appmgr"
-    },
-    "auth2": {
-        "package": "p",
-        "appid": "appid2"
-    }
-}
-
-
 class DummyService(BaseService):
     def __init__(self, conn, token):
         apis = [
