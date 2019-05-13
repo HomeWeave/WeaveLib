@@ -305,7 +305,7 @@ def find_rpc(service, app_id, rpc_name):
     client = RPCClient(conn, rpc_info, token)
     client.start()
 
-    res = client["rpc_info"](app_id, rpc_name)
+    res = client["rpc_info"](app_id, rpc_name, _block=True)
     client.stop()
 
     return res
