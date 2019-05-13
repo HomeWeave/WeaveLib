@@ -10,7 +10,6 @@ import os
 import subprocess
 import sys
 import threading
-from contextlib import suppress
 
 import psutil
 
@@ -49,12 +48,8 @@ class BaseService(object):
 class BackgroundThreadServiceStart(object):
     """ Mixin with BaseServer to start in the background thread. """
     def service_start(self):
-        def thread_target():
-            with suppress(Exception):
-                self.on_service_start()
-
         self.before_service_start()
-        self.service_thread = threading.Thread(target=thread_target)
+        self.service_thread = threading.Thread(target=self.on_service_start)
         self.service_thread.start()
         self.started_event = threading.Event()
 

@@ -40,3 +40,7 @@ class AuthenticationFailed(WeaveException):
 
 class SchemaValidationFailed(WeaveException):
     pass
+
+
+class PluginLoadError(WeaveException):
+    pass
