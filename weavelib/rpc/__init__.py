@@ -1,5 +1,5 @@
 from .rpc import ServerAPI, ClientAPI, RPCClient, RPCServer
-from .rpc import RemoteAPIError, get_rpc_caller
+from .rpc import RemoteAPIError, get_rpc_caller, find_rpc
 from .api import ArgParameter, KeywordParameter
 
 
@@ -11,5 +11,6 @@ __all__ = [
     'ArgParameter',
     'KeywordParameter',
     'RemoteAPIError',
-    'get_rpc_caller'
+    'get_rpc_caller',
+    'find_rpc',
 ]
