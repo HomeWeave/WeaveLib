@@ -94,7 +94,7 @@ class BasePlugin(BaseService):
                                              stderr=subprocess.STDOUT)
         self.service_pid = self.service_proc.pid
 
-        self.write_token(self.serice_proc.stdin, self.get_auth_token())
+        self.write_auth_token(self.serice_proc.stdin, self.get_auth_token())
 
         for line in iter(self.service_proc.stdout.readline, b''):
             content = line.strip().decode()
