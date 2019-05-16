@@ -69,6 +69,7 @@ class BasePlugin(BaseService):
     def __init__(self, **kwargs):
         self.venv_dir = kwargs.pop('venv_dir')
         self.auth_token = kwargs.pop('auth_token')
+        self.plugin_dir = kwargs.pop('plugin_dir')
         super(BasePlugin, self).__init__(**kwargs)
 
     def service_start(self):
@@ -111,10 +112,7 @@ class BasePlugin(BaseService):
         return self.started_event.wait(timeout)
 
     def get_launch_command(self, name):
-        package_root = self.__module__.split('.')[0]
-        py_file = sys.modules[package_root].__file__
-        base_dir = os.path.dirname(os.path.dirname(py_file))
-        return ["weave-launch", base_dir, self.venv_dir]
+        return ["weave-launch", self.plugin_dir, self.venv_dir]
 
     def write_auth_token(self, file_handle, token):
         file_handle.write((token + "\n").encode())
