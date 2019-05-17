@@ -5,6 +5,7 @@ BackgroundServiceStart mixin before BaseService while inheriting.
 """
 
 
+import json
 import logging
 import os
 import subprocess
@@ -46,7 +47,7 @@ class BaseService(object):
 
 
 class BackgroundThreadServiceStart(object):
-    """ Mixin with BaseServer to start in the background thread. """
+    """ Mixin with BaseService to start in the background thread. """
     def service_start(self):
         self.before_service_start()
         self.service_thread = threading.Thread(target=self.on_service_start)
@@ -64,14 +65,8 @@ class BackgroundThreadServiceStart(object):
         self.started_event.set()
 
 
-class BasePlugin(BaseService):
-    """ To be used by plugins loaded by WeaveServer (on the same machine)."""
-    def __init__(self, **kwargs):
-        self.venv_dir = kwargs.pop('venv_dir')
-        self.auth_token = kwargs.pop('auth_token')
-        self.plugin_dir = kwargs.pop('plugin_dir')
-        super(BasePlugin, self).__init__(**kwargs)
-
+class BackgroundProcessServiceStart(object):
+    """ Mixin with BaseService to start in another subprocess. """
     def service_start(self):
         self.started_event = threading.Event()
         self.child_thread = threading.Thread(target=self.child_process)
@@ -88,21 +83,33 @@ class BasePlugin(BaseService):
 
     def child_process(self):
         name = '.'.join(self.__module__.split('.')[:-1])
-        command = self.get_launch_command(name)
-        self.service_proc = subprocess.Popen(command, env=os.environ.copy(),
+        package_root = self.__module__.split('.')[0]
+        py_file = sys.modules[package_root].__file__
+        base_dir = os.path.dirname(os.path.dirname(py_file))
+
+        self.service_proc = subprocess.Popen(["weave-env", base_dir],
                                              stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT)
+
         self.service_pid = self.service_proc.pid
 
-        self.write_auth_token(self.service_proc.stdin, self.get_auth_token())
+        params = json.dumps(self.get_params())
+        self.service_proc.stdin.write((params + "\n").encode())
 
-        for line in iter(self.service_proc.stdout.readline, b''):
+        lines = iter(self.service_proc.stdout.readline, b'')
+        for line in lines:
             content = line.strip().decode()
             if "SERVICE-STARTED-" + name in content:
                 self.started_event.set()
+                break
             else:
                 logger.info("[%s]: %s", name, content)
+
+        # Now that the service start line has been found, just echo all lines.
+        for line in lines:
+            content = line.strip().decode()
+            logger.info("[%s]: %s", name, content)
 
     def notify_start(self):
         name = '.'.join(self.__module__.split('.')[:-1])
@@ -111,12 +118,20 @@ class BasePlugin(BaseService):
     def wait_for_start(self, timeout):
         return self.started_event.wait(timeout)
 
-    def get_launch_command(self, name):
-        return ["weave-launch", self.plugin_dir, self.venv_dir]
+    def get_params(self):
+        return {}
 
-    def write_auth_token(self, file_handle, token):
-        file_handle.write((token + "\n").encode())
-        file_handle.flush()
+
+class BasePlugin(BackgroundProcessServiceStart, BaseService):
+    """ To be used by plugins loaded by WeaveServer (on the same machine)."""
+    def __init__(self, **kwargs):
+        self.venv_dir = kwargs.pop('venv_dir')
+        self.auth_token = kwargs.pop('auth_token')
+        self.plugin_dir = kwargs.pop('plugin_dir')
+        super(BasePlugin, self).__init__(**kwargs)
+
+    def get_params(self, name):
+        return {"venv_dir": self.venv_dir, "auth_token": self.auth_token}
 
     def get_auth_token(self):
         return self.auth_token
