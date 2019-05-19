@@ -83,11 +83,7 @@ class BackgroundProcessServiceStart(object):
 
     def child_process(self):
         name = '.'.join(self.__module__.split('.')[:-1])
-        package_root = self.__module__.split('.')[0]
-        py_file = sys.modules[package_root].__file__
-        base_dir = os.path.dirname(os.path.dirname(py_file))
-
-        self.service_proc = subprocess.Popen(["weave-env", base_dir],
+        self.service_proc = subprocess.Popen(["weave-env"],
                                              stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT)
@@ -142,7 +138,11 @@ class BasePlugin(BackgroundProcessServiceStart, AuthenticatedPlugin):
         super(BasePlugin, self).__init__(**kwargs)
 
     def get_params(self):
-        return {"venv_dir": self.venv_dir, "auth_token": self.auth_token}
+        return {
+            "venv_dir": self.venv_dir,
+            "auth_token": self.auth_token,
+            "plugin_dir": self.plugin_dir
+        }
 
 
 class MessagingEnabled(AuthenticatedPlugin):
