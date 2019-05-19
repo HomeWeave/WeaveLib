@@ -83,7 +83,7 @@ class BackgroundProcessServiceStart(object):
 
     def child_process(self):
         name = '.'.join(self.__module__.split('.')[:-1])
-        self.service_proc = subprocess.Popen(["weave-env"],
+        self.service_proc = subprocess.Popen(["weave-launch"],
                                              stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT)
