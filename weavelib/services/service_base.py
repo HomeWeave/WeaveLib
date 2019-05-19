@@ -122,22 +122,30 @@ class BackgroundProcessServiceStart(object):
         return {}
 
 
-class BasePlugin(BackgroundProcessServiceStart, BaseService):
+class AuthenticatedPlugin(BaseService):
+    """ Probably should not be directly used. This is purely provide the
+        get_auth_token() interface for DummyMessagingService class in core.
+    """
+    def __init__(self, **kwargs):
+        self.auth_token = kwargs.pop('auth_token')
+        super(AuthenticatedPlugin, self).__init__(**kwargs)
+
+    def get_auth_token(self):
+        return self.auth_token
+
+
+class BasePlugin(BackgroundProcessServiceStart, AuthenticatedPlugin):
     """ To be used by plugins loaded by WeaveServer (on the same machine)."""
     def __init__(self, **kwargs):
         self.venv_dir = kwargs.pop('venv_dir')
-        self.auth_token = kwargs.pop('auth_token')
         self.plugin_dir = kwargs.pop('plugin_dir')
         super(BasePlugin, self).__init__(**kwargs)
 
     def get_params(self, name):
         return {"venv_dir": self.venv_dir, "auth_token": self.auth_token}
 
-    def get_auth_token(self):
-        return self.auth_token
 
-
-class MessagingEnabled(BaseService):
+class MessagingEnabled(AuthenticatedPlugin):
     def __init__(self, **kwargs):
         # Remember to keep MessagingService __init__ consistent.
         self.conn = kwargs.pop('conn')
