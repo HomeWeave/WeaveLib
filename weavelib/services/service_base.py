@@ -141,7 +141,7 @@ class BasePlugin(BackgroundProcessServiceStart, AuthenticatedPlugin):
         self.plugin_dir = kwargs.pop('plugin_dir')
         super(BasePlugin, self).__init__(**kwargs)
 
-    def get_params(self, name):
+    def get_params(self):
         return {"venv_dir": self.venv_dir, "auth_token": self.auth_token}
 
 
