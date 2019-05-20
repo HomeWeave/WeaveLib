@@ -135,14 +135,18 @@ class BasePlugin(BackgroundProcessServiceStart, AuthenticatedPlugin):
     def __init__(self, **kwargs):
         self.venv_dir = kwargs.pop('venv_dir')
         self.plugin_dir = kwargs.pop('plugin_dir')
+        self.ignore_hierarchy = kwargs.pop('ignore_hierarchy', False)
         super(BasePlugin, self).__init__(**kwargs)
 
     def get_params(self):
-        return {
+        params = {
             "venv_dir": self.venv_dir,
             "auth_token": self.auth_token,
             "plugin_dir": self.plugin_dir
         }
+        if self.ignore_hierarchy:
+            params["ignore_hierarchy"] = True
+        return params
 
 
 class MessagingEnabled(AuthenticatedPlugin):
