@@ -45,6 +45,9 @@ class BaseService(object):
     def notify_start(self):
         pass
 
+    def get_params(self):
+        return {}
+
 
 class BackgroundThreadServiceStart(object):
     """ Mixin with BaseService to start in the background thread. """
@@ -67,6 +70,10 @@ class BackgroundThreadServiceStart(object):
 
 class BackgroundProcessServiceStart(object):
     """ Mixin with BaseService to start in another subprocess. """
+    def __init__(self, **kwargs):
+        self.started_token = kwargs.pop('started_token')
+        super(BackgroundProcessServiceStart, self).__init__(**kwargs)
+
     def service_start(self):
         self.started_event = threading.Event()
         self.child_thread = threading.Thread(target=self.child_process)
@@ -96,7 +103,7 @@ class BackgroundProcessServiceStart(object):
         lines = iter(self.service_proc.stdout.readline, b'')
         for line in lines:
             content = line.strip().decode()
-            if "SERVICE-STARTED-" + name in content:
+            if self.started_token in content:
                 self.started_event.set()
                 break
             else:
@@ -108,14 +115,15 @@ class BackgroundProcessServiceStart(object):
             logger.info("[%s]: %s", name, content)
 
     def notify_start(self):
-        name = '.'.join(self.__module__.split('.')[:-1])
-        logger.info("SERVICE-STARTED-" + name)
+        logger.info(self.started_token)
 
     def wait_for_start(self, timeout):
         return self.started_event.wait(timeout)
 
     def get_params(self):
-        return {}
+        params = {"started_token": self.started_token}
+        params.update(super(BackgroundProcessServiceStart, self).get_params())
+        return params
 
 
 class AuthenticatedPlugin(BaseService):
@@ -129,23 +137,25 @@ class AuthenticatedPlugin(BaseService):
     def get_auth_token(self):
         return self.auth_token
 
+    def get_params(self):
+        params = {"auth_token": self.auth_token}
+        params.update(super(AuthenticatedPlugin, self).get_params())
+        return params
+
 
 class BasePlugin(BackgroundProcessServiceStart, AuthenticatedPlugin):
     """ To be used by plugins loaded by WeaveServer (on the same machine)."""
     def __init__(self, **kwargs):
         self.venv_dir = kwargs.pop('venv_dir')
         self.plugin_dir = kwargs.pop('plugin_dir')
-        self.ignore_hierarchy = kwargs.pop('ignore_hierarchy', False)
         super(BasePlugin, self).__init__(**kwargs)
 
     def get_params(self):
         params = {
             "venv_dir": self.venv_dir,
-            "auth_token": self.auth_token,
             "plugin_dir": self.plugin_dir
         }
-        if self.ignore_hierarchy:
-            params["ignore_hierarchy"] = True
+        params.update(super(BasePlugin, self).get_params())
         return params
 
 
