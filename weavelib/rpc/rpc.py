@@ -273,7 +273,7 @@ def get_rpc_caller():
             return frame.f_locals["headers"].get("AUTH")
 
 
-def find_rpc(service, app_id, rpc_name):
+def find_rpc(service, app_url, rpc_name):
     token = service.get_auth_token()
     conn = service.get_connection()
 
@@ -286,7 +286,7 @@ def find_rpc(service, app_id, rpc_name):
                 "description": "",
                 "args": [
                     {
-                        "name": "app_id",
+                        "name": "app_url",
                         "description": "",
                         "schema": {"type": "string"}
                     },
@@ -305,7 +305,7 @@ def find_rpc(service, app_id, rpc_name):
     client = RPCClient(conn, rpc_info, token)
     client.start()
 
-    res = client["rpc_info"](app_id, rpc_name, _block=True)
+    res = client["rpc_info"](app_url, rpc_name, _block=True)
     client.stop()
 
     return res
