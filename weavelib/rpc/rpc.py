@@ -105,7 +105,7 @@ class RPCServer(RPC):
     def register_rpc(self):
         apis = {name: api.info for name, api in self.apis.items()}
         # TODO: This means one extra RC for every registration. Clean up.
-        rpc_info = find_rpc(service, MESSAGING_PLUGIN_URL, "app_manager")
+        rpc_info = find_rpc(self.service, MESSAGING_PLUGIN_URL, "app_manager")
         client = RPCClient(self.service.get_connection(), rpc_info,
                            self.service.get_auth_token())
         return client["register_rpc"](self.name, self.description, apis,
