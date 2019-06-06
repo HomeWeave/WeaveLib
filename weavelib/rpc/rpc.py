@@ -14,6 +14,7 @@ from .api import API, ArgParameter, KeywordParameter
 
 
 logger = logging.getLogger(__name__)
+MESSAGING_PLUGIN_URL = "https://github.com/HomeWeave/WeaveServer.git"
 
 
 def api_group_schema(apis):
@@ -103,8 +104,12 @@ class RPCServer(RPC):
 
     def register_rpc(self):
         apis = {name: api.info for name, api in self.apis.items()}
-        return self.service.rpc_client["register_rpc"](
-            self.name, self.description, apis, _block=True)
+        # TODO: This means one extra RC for every registration. Clean up.
+        rpc_info = find_rpc(service, MESSAGING_PLUGIN_URL, "app_manager")
+        client = RPCClient(self.service.get_connection(), rpc_info,
+                           self.service.get_auth_token())
+        return client["register_rpc"](self.name, self.description, apis,
+                                      _block=True)
 
     def start(self):
         conn = self.service.get_connection()
