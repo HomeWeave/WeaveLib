@@ -303,8 +303,8 @@ def find_rpc(service, app_url, rpc_name):
                 ]
             }
         },
-        "request_queue": "_system/registry/request",
-        "response_queue": "_system/registry/response",
+        "request_queue": "/_system/registry/request",
+        "response_queue": "/_system/registry/response",
     }
 
     client = RPCClient(conn, rpc_info, token)
