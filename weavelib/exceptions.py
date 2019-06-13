@@ -44,3 +44,7 @@ class SchemaValidationFailed(WeaveException):
 
 class PluginLoadError(WeaveException):
     pass
+
+
+class TimedOut(WeaveException):
+    pass
