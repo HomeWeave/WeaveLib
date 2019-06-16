@@ -108,8 +108,11 @@ class RPCServer(RPC):
         rpc_info = find_rpc(self.service, MESSAGING_PLUGIN_URL, "app_manager")
         client = RPCClient(self.service.get_connection(), rpc_info,
                            self.service.get_auth_token())
-        return client["register_rpc"](self.name, self.description, apis,
-                                      _block=True)
+        client.start()
+        result = client["register_rpc"](self.name, self.description, apis,
+                                        _block=True)
+        client.stop()
+        return result
 
     def start(self):
         conn = self.service.get_connection()
