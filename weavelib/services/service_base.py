@@ -99,6 +99,7 @@ class BackgroundProcessServiceStart(object):
 
         params = json.dumps(self.get_params())
         self.service_proc.stdin.write((params + "\n").encode())
+        self.service_proc.stdin.flush()
 
         lines = iter(self.service_proc.stdout.readline, b'')
         for line in lines:
