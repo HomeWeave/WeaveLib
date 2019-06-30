@@ -90,7 +90,8 @@ class RPCReceiver(Receiver):
 class RPCServer(RPC):
     MAX_RPC_WORKERS = 5
 
-    def __init__(self, name, description, apis, service):
+    def __init__(self, name, description, apis, service,
+                 allowed_requestors=None):
         if not isinstance(service, MessagingEnabled):
             raise BadArguments("Service is not messaging enabled.")
 
@@ -101,6 +102,7 @@ class RPCServer(RPC):
         self.receiver = None
         self.receiver_thread = None
         self.cookie = None
+        self.allowed_requestors = allowed_requestors or []
 
     def register_rpc(self):
         apis = {name: api.info for name, api in self.apis.items()}
@@ -110,7 +112,7 @@ class RPCServer(RPC):
                            self.service.get_auth_token())
         client.start()
         result = client["register_rpc"](self.name, self.description, apis,
-                                        _block=True)
+                                        self.allowed_requestors, _block=True)
         client.stop()
         return result
 
