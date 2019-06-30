@@ -38,6 +38,10 @@ class AuthenticationFailed(WeaveException):
     pass
 
 
+class Unauthorized(WeaveException):
+    pass
+
+
 class SchemaValidationFailed(WeaveException):
     pass
 
