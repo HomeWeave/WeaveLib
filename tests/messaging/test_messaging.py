@@ -5,7 +5,7 @@ import pytest
 import weavelib.netutils as netutils
 from weavelib.exceptions import AuthenticationFailed, ProtocolError
 from weavelib.messaging import discover_message_server
-from weavelib.messaging import WeaveConnection, Creator
+from weavelib.messaging import WeaveConnection
 
 from weaveserver.services.discovery import DiscoveryService
 from weaveserver.services.discovery.service import DiscoveryServer
@@ -76,32 +76,3 @@ class TestDiscoverMessageServer(object):
             assert discover_message_server()[0] in ip_addresses
         finally:
             service.on_service_stop()
-
-
-class TestCreator(object):
-    @classmethod
-    def setup_class(cls):
-        cls.service_manager = ServiceManager()
-        cls.service_manager.apps.update(AUTH)
-        cls.service_manager.start_services(["core"])
-
-        cls.conn = WeaveConnection.local()
-        cls.conn.connect()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.conn.close()
-        cls.service_manager.stop()
-        cls.service_manager.wait()
-
-    def test_create_without_auth(self):
-        creator = Creator(self.conn)
-        creator.start()
-        with pytest.raises(ProtocolError):
-            creator.create({"queue_name": "/test"})
-
-    def test_create_bad_auth(self):
-        creator = Creator(self.conn, auth="bad-auth")
-        creator.start()
-        with pytest.raises(AuthenticationFailed):
-            creator.create({"queue_name": "/test"})

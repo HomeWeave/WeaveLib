@@ -361,28 +361,6 @@ class Receiver(object):
         pass
 
 
-class Creator(object):
-    def __init__(self, conn, **kwargs):
-        self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
-        self.conn = conn
-        self.session_id = "creator-session-" + str(uuid4())
-
-    def start(self):
-        pass
-
-    def create(self, queue_info, headers=None):
-        msg = Message("create", queue_info)
-        msg.headers.update(self.extra_headers)
-        if headers:
-            msg.headers.update(headers)
-
-        response = self.conn.write_message(msg, self.session_id)
-        return response.headers["Q"]
-
-    def close(self):
-        pass
-
-
 def discover_message_server():
     IP, PORT = "<broadcast>", 23034
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
