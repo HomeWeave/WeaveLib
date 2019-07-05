@@ -83,8 +83,7 @@ class TestRPC(object):
         appmgr_client.start()
 
         # Register the DummyService used in the test cases.
-        cls.test_token = appmgr_client["register_plugin"]("x", "y", "z",
-                                                          _block=True)
+        cls.test_token = appmgr_client["register_plugin"]("x", "y", _block=True)
 
         appmgr_client.stop()
 
@@ -184,9 +183,8 @@ class TestRPC(object):
 
         res = client["api3"](_block=True)
         expected = {
-            "app_name": "y",
-            "app_id": "x",
-            "app_url": "z",
+            "app_name": "x",
+            "app_url": "y",
             "app_type": "plugin"
         }
         assert res == expected
