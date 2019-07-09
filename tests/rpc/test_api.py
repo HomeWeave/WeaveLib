@@ -50,7 +50,7 @@ class TestAPI(object):
 
         api.validate_call()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(BadArguments):
             api.validate_call(1, 2, 3, k=5)
 
     def test_validate_schema_with_args(self):
@@ -62,10 +62,10 @@ class TestAPI(object):
 
         api.validate_call("a1", False, a2=5)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(BadArguments):
             api.validate_call()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(BadArguments):
             api.validate_call("a", True, {1: 2}, a4=5)
 
     def test_info(self):
@@ -135,5 +135,5 @@ class TestAPI(object):
         assert API.from_info(api.info).info == api.info
 
     def test_api_bad_reconstruct(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(BadArguments):
             API.from_info({})

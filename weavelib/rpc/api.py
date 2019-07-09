@@ -118,7 +118,7 @@ class API(object):
         try:
             validate(obj, self.schema)
         except ValidationError:
-            raise TypeError("Bad parameters for function call.")
+            raise BadArguments("Bad parameters for function call.")
 
         return obj
 
@@ -127,7 +127,7 @@ class API(object):
         try:
             api = API(info["name"], info["description"], [])
         except KeyError:
-            raise ValueError("Invalid API info object.")
+            raise BadArguments("Invalid API info object.")
 
         api.args = [ArgParameter.from_info(x) for x in info.get("args", [])]
         api.kwargs = [KeywordParameter.from_info(x) for x in
