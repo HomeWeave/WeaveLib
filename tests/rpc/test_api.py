@@ -1,6 +1,7 @@
 import pytest
 from jsonschema import validate
 
+from weavelib.exceptions import BadArguments
 from weavelib.rpc import ArgParameter, KeywordParameter
 from weavelib.rpc.api import API
 
@@ -33,10 +34,10 @@ class TestParameter(object):
         assert ArgParameter.from_info(obj).info == obj
 
     def test_arg_from_bad_info(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(BadArguments):
             KeywordParameter.from_info({})
 
-        with pytest.raises(ValueError):
+        with pytest.raises(BadArguments):
             ArgParameter.from_info({})
 
 

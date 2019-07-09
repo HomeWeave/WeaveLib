@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from jsonschema import validate, ValidationError
 
+from weavelib.exceptions import BadArguments
 
 class Parameter(object):
     SIMPLE_TYPE_SCHEMA = {
@@ -43,7 +44,7 @@ class ArgParameter(Parameter):
             return ArgParameter(info["name"], info["description"],
                                 info["schema"])
         except KeyError:
-            raise ValueError("Invalid ArgParameter info object.")
+            raise BadArguments("Invalid ArgParameter info object.")
 
 
 class KeywordParameter(Parameter):
@@ -55,7 +56,7 @@ class KeywordParameter(Parameter):
             return KeywordParameter(info["name"], info["description"],
                                     info["schema"])
         except KeyError:
-            raise ValueError("Invalid KeywordParameter info object.")
+            raise BadArguments("Invalid KeywordParameter info object.")
 
 
 class API(object):
