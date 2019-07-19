@@ -194,8 +194,8 @@ class RPCServer(RPC):
             "name": self.name,
             "description": self.description,
             "apis": {name: api.info for name, api in self.apis.items()},
-            "request_queue": self.receiver.queue,
-            "response_queue": self.sender.queue
+            "request_queue": self.receiver.channel,
+            "response_queue": self.sender.channel
         }
 
 

@@ -281,8 +281,8 @@ class WeaveConnection(object):
 
 
 class Sender(object):
-    def __init__(self, conn, queue, **kwargs):
-        self.queue = queue
+    def __init__(self, conn, channel, **kwargs):
+        self.channel = channel
         self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
         self.conn = conn
         self.session_id = "sender-session-" + str(uuid4())
@@ -294,13 +294,13 @@ class Sender(object):
         if isinstance(obj, Message):
             msg = obj
         else:
-            msg = Message("enqueue", obj)
+            msg = Message("push", obj)
 
         msg.headers.update(self.extra_headers)
         if headers:
             msg.headers.update(headers)
 
-        msg.headers["Q"] = self.queue
+        msg.headers["C"] = self.channel
         return self.conn.write_message(msg, self.session_id)
 
     def close(self):
@@ -308,8 +308,8 @@ class Sender(object):
 
 
 class Receiver(object):
-    def __init__(self, conn, queue, **kwargs):
-        self.queue = queue
+    def __init__(self, conn, channel, **kwargs):
+        self.channel = channel
         self.conn = conn
         self.extra_headers = {x.upper(): y for x, y in kwargs.items()}
         self.session_id = "receiver-session-" + str(uuid4())
@@ -325,11 +325,11 @@ class Receiver(object):
         return response
 
     def prepare_receive_message(self):
-        dequeue_msg = Message("dequeue")
-        dequeue_msg.headers["SESS"] = self.session_id
-        dequeue_msg.headers["Q"] = self.queue
-        dequeue_msg.headers.update(self.extra_headers)
-        return dequeue_msg
+        pop_msg = Message("pop")
+        pop_msg.headers["SESS"] = self.session_id
+        pop_msg.headers["C"] = self.channel
+        pop_msg.headers.update(self.extra_headers)
+        return pop_msg
 
     def run(self):
         self.active = True
@@ -342,7 +342,7 @@ class Receiver(object):
                     return
                 raise
             except ObjectClosed:
-                logger.error("Queue closed: " + self.queue)
+                logger.error("Channel closed: " + self.channel)
                 self.stop()
                 break
 
