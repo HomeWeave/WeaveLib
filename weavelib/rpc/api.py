@@ -4,6 +4,46 @@ from jsonschema import validate, ValidationError
 
 from weavelib.exceptions import BadArguments
 
+
+class BaseSchema(object):
+    pass
+
+
+class Exactly(BaseSchema):
+    def __init__(self, obj):
+        self.obj = obj
+
+    def json_schema(self):
+        json_type = {
+            bool: "boolean",
+            int: "number",
+            float: "number",
+            dict: "object",
+            list: "array",
+        }
+        return {
+            "type": json_type[type(self.obj)],
+            "enum": [self.obj]
+        }
+
+class JsonSchema(BaseSchema):
+    def __init__(self, obj):
+        self.schema = obj
+
+    def json_schema(self):
+        return self.schema
+
+
+class OneOf(BaseSchema):
+    def __init__(self, *objs):
+        self.objs = objs
+
+    def json_schema(self):
+        return {
+            "anyOf": [Exactly(x).json_schema() for x in self.objs]
+        }
+
+
 class Parameter(object):
     SIMPLE_TYPE_SCHEMA = {
         str: {"type": "string"},
@@ -11,19 +51,28 @@ class Parameter(object):
         bool: {"type": "boolean"}
     }
 
-    def __init__(self, name, desc, cls_or_schema):
+    def __init__(self, name, desc, schema):
         self.name = name
         self.desc = desc
-        if isinstance(cls_or_schema, type):
-            if cls_or_schema not in (str, int, bool):
+        if isinstance(schema, type):
+            if schema not in (str, int, bool):
                 raise ValueError("Unexpected type for parameter.")
-            self.param_schema = self.SIMPLE_TYPE_SCHEMA[cls_or_schema]
-        elif isinstance(cls_or_schema, dict):
+            self.param_schema = self.SIMPLE_TYPE_SCHEMA[schema]
+        elif isinstance(schema, dict):
             # TODO: Validate with meta-schema
-            self.param_schema = cls_or_schema
+            self.param_schema = schema
+        elif isinstance(schema, BaseSchema):
+            self.param_schema = schema.json_schema()
+        elif callable(schema):
+            self.param_schema = schema
 
     @property
     def schema(self):
+        if callable(self.param_schema):
+            json_schema = self.param_schema()
+            if not isinstance(json_schema, BaseSchema):
+              raise ValueError("Callable should return a BaseSchema instance")
+            return json_schema.json_schema()
         return self.param_schema
 
     @property
@@ -31,7 +80,7 @@ class Parameter(object):
         return {
             "name": self.name,
             "description": self.desc,
-            "schema": self.param_schema
+            "schema": self.schema
         }
 
 

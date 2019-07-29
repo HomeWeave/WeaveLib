@@ -3,7 +3,7 @@ from jsonschema import validate
 
 from weavelib.exceptions import BadArguments
 from weavelib.rpc import ArgParameter, KeywordParameter
-from weavelib.rpc.api import API
+from weavelib.rpc.api import API, JsonSchema, OneOf, Exactly
 
 
 class TestParameter(object):
@@ -137,3 +137,32 @@ class TestAPI(object):
     def test_api_bad_reconstruct(self):
         with pytest.raises(BadArguments):
             API.from_info({})
+
+    def test_validate_schema_with_callable(self):
+        count = 0
+        def schema():
+            return [
+                Exactly({"h": [1, 2, "hi", {"a": "b"}]}),
+                OneOf({"a": "b"}, {"c": "d"}, [1, 2]),
+                JsonSchema({"type": "string"})
+            ][count]
+
+        api = API("name", "desc", [
+            ArgParameter("a1", "d1", schema)
+        ])
+
+        with pytest.raises(BadArguments):
+            api.validate_call({"h": [1, 2, "hi", {"a": "c"}]})
+        api.validate_call({"h": [1, 2, "hi", {"a": "b"}]})
+
+        count = 1
+        with pytest.raises(BadArguments):
+            api.validate_call({"h": [1, 2, "hi", {"a": "b"}]})
+        api.validate_call({"a": "b"})
+        api.validate_call({"c": "d"})
+        api.validate_call([1, 2])
+
+        count = 2
+        with pytest.raises(BadArguments):
+          api.validate_call([1, 2])
+        api.validate_call("test")
