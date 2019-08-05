@@ -5,7 +5,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
+from weavelib.exceptions import BadArguments
 from weavelib.messaging import WeaveConnection
+from weavelib.rpc import OneOf
 from weavelib.rpc import RPCClient, RPCServer, ServerAPI, get_rpc_caller
 from weavelib.rpc import ArgParameter, KeywordParameter, RemoteAPIError
 from weavelib.rpc import find_rpc
@@ -28,10 +30,17 @@ class DummyService(MessagingEnabled, BaseService):
             ], self.api1),
             ServerAPI("api2", "desc2", [], self.api2),
             ServerAPI("api3", "desc3", [], self.api3),
+            ServerAPI("callback", "c", [
+                ArgParameter("param", "d", self.get_param)
+            ], self.callback_api),
+            ServerAPI("change_param", "c", [
+                ArgParameter("param", "d", str)
+            ], self.change_param),
             ServerAPI("exception", "desc2", [], self.exception)
         ]
         self.rpc_server = RPCServer("name", "desc", apis, self)
         self.paused = False
+        self.available_params = ["1", "2"]
 
     def api1(self, p1, p2, k3):
         if type(p1) != str or type(p2) != int or type(k3) != bool:
@@ -49,6 +58,16 @@ class DummyService(MessagingEnabled, BaseService):
         def execute_api_internal():
             return get_rpc_caller()
         return execute_api_internal()
+
+    def callback_api(self, param):
+        return param in self.available_params
+
+    def get_param(self):
+        return OneOf(*self.available_params)
+
+    def change_param(self, value):
+        self.available_params = value.split(",")
+        self.rpc_server.update_rpc()
 
     def exception(self):
         raise RuntimeError("dummy")
@@ -201,4 +220,27 @@ class TestRPC(object):
 
         client["exception"]()  # Exception is not visible.
 
+        client.stop()
+
+    def test_api_with_dynamic_schema(self):
+        info = self.service.rpc_server.info_message
+        client = RPCClient(self.conn, info, self.test_token)
+        client.start()
+
+        assert client["callback"]("1", _block=True)
+        client["change_param"]("hi,there", _block=True)
+
+        client.stop()
+
+        info = self.service.rpc_server.info_message
+        client = RPCClient(self.conn, info, self.test_token)
+        client.start()
+        with pytest.raises(BadArguments):
+            client["callback"]("1", _block=True)
+        client.stop()
+
+        client = RPCClient(self.conn, info, self.test_token)
+        client.start()
+        assert client["callback"]("hi", _block=True)
+        assert client["callback"]("there", _block=True)
         client.stop()
