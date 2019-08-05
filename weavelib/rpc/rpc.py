@@ -146,6 +146,8 @@ class RPCServer(RPC):
 
 
     def stop(self):
+        self.appmgr_client["unregister_rpc"](self.name, _block=True)
+
         self.appmgr_client.stop()
 
         # TODO: Delete the queue, too.
