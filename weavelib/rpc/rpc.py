@@ -102,23 +102,24 @@ class RPCServer(RPC):
         self.receiver = None
         self.receiver_thread = None
         self.cookie = None
+        self.appmgr_client = None
         self.allowed_requestors = allowed_requestors or []
 
     def register_rpc(self):
         apis = {name: api.info for name, api in self.apis.items()}
         # TODO: This means one extra RC for every registration. Clean up.
-        rpc_info = find_rpc(self.service, MESSAGING_PLUGIN_URL, "app_manager")
-        client = RPCClient(self.service.get_connection(), rpc_info,
-                           self.service.get_auth_token())
-        client.start()
-        result = client["register_rpc"](self.name, self.description, apis,
-                                        self.allowed_requestors, _block=True)
-        client.stop()
+        result = self.appmgr_client["register_rpc"](self.name, self.description,
+                                                    apis,
+                                                    self.allowed_requestors,
+                                                    _block=True)
         return result
 
     def start(self):
         conn = self.service.get_connection()
         auth_token = self.service.get_auth_token()
+        self.appmgr_client = self.get_appmgr_client()
+        self.appmgr_client.start()
+
         rpc_info = self.register_rpc()
         self.sender = Sender(conn, rpc_info["response_queue"], auth=auth_token)
         self.receiver = RPCReceiver(conn, self, rpc_info["request_queue"],
@@ -130,7 +131,17 @@ class RPCServer(RPC):
         self.receiver_thread = Thread(target=self.receiver.run)
         self.receiver_thread.start()
 
+    def get_appmgr_client(self):
+        # This is so that RootRPCServer in WeaveServer need not create an
+        # RPCClient to itself.
+        rpc_info = find_rpc(self.service, MESSAGING_PLUGIN_URL, "app_manager")
+        return RPCClient(self.service.get_connection(), rpc_info,
+                         self.service.get_auth_token())
+
+
     def stop(self):
+        self.appmgr_client.stop()
+
         # TODO: Delete the queue, too.
         self.receiver.stop()
         self.receiver_thread.join()
