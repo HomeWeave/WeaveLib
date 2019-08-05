@@ -114,6 +114,12 @@ class RPCServer(RPC):
                                                     _block=True)
         return result
 
+    def update_rpc(self, callback=None):
+        apis = {name: api.info for name, api in self.apis.items()}
+        return self.appmgr_client["update_rpc"](self.name, apis,
+                                                _block=(not callback),
+                                                _callback=callback)
+
     def start(self):
         conn = self.service.get_connection()
         auth_token = self.service.get_auth_token()

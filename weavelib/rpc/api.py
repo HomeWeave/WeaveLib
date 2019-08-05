@@ -18,6 +18,7 @@ class Exactly(BaseSchema):
             bool: "boolean",
             int: "number",
             float: "number",
+            str: "string",
             dict: "object",
             list: "array",
         }
