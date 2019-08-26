@@ -3,7 +3,7 @@ from jsonschema import validate
 
 from weavelib.exceptions import BadArguments
 from weavelib.rpc import ArgParameter, KeywordParameter, JsonSchema, OneOf
-from weavelib.rpc import Exactly, ListOf
+from weavelib.rpc import Exactly, ListOf, Type
 from weavelib.rpc.api import API
 
 
@@ -147,6 +147,7 @@ class TestAPI(object):
                 OneOf({"a": "b"}, {"c": "d"}, [1, 2]),
                 JsonSchema({"type": "string"}),
                 ListOf(Exactly(1)),
+                Type(int),
             ][count]
 
         api = API("name", "desc", [
@@ -174,3 +175,9 @@ class TestAPI(object):
             api.validate_call("test")
         api.validate_call([1])
         api.validate_call([1]*10)
+
+        count = 4
+        with pytest.raises(BadArguments):
+            api.validate_call([1])
+        api.validate_call(5)
+        api.validate_call(6)

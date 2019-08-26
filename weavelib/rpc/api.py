@@ -5,6 +5,22 @@ from jsonschema import validate, ValidationError
 from weavelib.exceptions import BadArguments
 
 
+def from_type(pytype):
+    types = {
+        bool: "boolean",
+        int: "number",
+        float: "number",
+        str: "string",
+        dict: "object",
+        list: "array",
+    }
+
+    if pytype not in types:
+        raise BadArguments("Unsupported type.")
+
+    return types[pytype]
+
+
 class BaseSchema(object):
     pass
 
@@ -12,18 +28,11 @@ class BaseSchema(object):
 class Exactly(BaseSchema):
     def __init__(self, obj):
         self.obj = obj
+        self.json_type = from_type(type(obj))
 
     def json_schema(self):
-        json_type = {
-            bool: "boolean",
-            int: "number",
-            float: "number",
-            str: "string",
-            dict: "object",
-            list: "array",
-        }
         return {
-            "type": json_type[type(self.obj)],
+            "type": self.json_type,
             "enum": [self.obj]
         }
 
@@ -51,6 +60,17 @@ class ListOf(BaseSchema):
 
     def json_schema(self):
         return {"type": "array", "items": self.item_type.json_schema()}
+
+
+class Type(BaseSchema):
+    def __init__(self, pytype):
+        if pytype not in (bool, int, float, str):
+            raise BadArguments("Unsupported type.")
+        self.json_type = from_type(pytype)
+
+    def json_schema(self):
+        return {"type": self.json_type}
+
 
 class Parameter(object):
     SIMPLE_TYPE_SCHEMA = {
