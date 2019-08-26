@@ -45,6 +45,13 @@ class OneOf(BaseSchema):
         }
 
 
+class ListOf(BaseSchema):
+    def __init__(self, base_schema):
+        self.item_type = base_schema
+
+    def json_schema(self):
+        return {"type": "array", "items": self.item_type.json_schema()}
+
 class Parameter(object):
     SIMPLE_TYPE_SCHEMA = {
         str: {"type": "string"},

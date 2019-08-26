@@ -2,8 +2,9 @@ import pytest
 from jsonschema import validate
 
 from weavelib.exceptions import BadArguments
-from weavelib.rpc import ArgParameter, KeywordParameter
-from weavelib.rpc.api import API, JsonSchema, OneOf, Exactly
+from weavelib.rpc import ArgParameter, KeywordParameter, JsonSchema, OneOf
+from weavelib.rpc import Exactly, ListOf
+from weavelib.rpc.api import API
 
 
 class TestParameter(object):
@@ -144,7 +145,8 @@ class TestAPI(object):
             return [
                 Exactly({"h": [1, 2, "hi", {"a": "b"}]}),
                 OneOf({"a": "b"}, {"c": "d"}, [1, 2]),
-                JsonSchema({"type": "string"})
+                JsonSchema({"type": "string"}),
+                ListOf(Exactly(1)),
             ][count]
 
         api = API("name", "desc", [
@@ -166,3 +168,9 @@ class TestAPI(object):
         with pytest.raises(BadArguments):
           api.validate_call([1, 2])
         api.validate_call("test")
+
+        count = 3
+        with pytest.raises(BadArguments):
+            api.validate_call("test")
+        api.validate_call([1])
+        api.validate_call([1]*10)
