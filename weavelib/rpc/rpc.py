@@ -272,14 +272,7 @@ class RPCClient(RPC):
                 return
 
             event.wait()
-
-            if "result" in res_arr[0]:
-                return res_arr[0]["result"]
-            elif "error_name" in res_arr[0]:
-                raise_message_exception(res_arr[0]["error_name"],
-                                        res_arr[0].get("error"))
-            else:
-                raise RemoteAPIError(res_arr[0].get("error"))
+            return extract_rpc_payload(res_arr[0])
 
         return ClientAPI.from_info(obj, on_invoke)
 
@@ -338,3 +331,12 @@ def find_rpc(service, app_url, rpc_name):
     client.stop()
 
     return res
+
+
+def extract_rpc_payload(response):
+    if "result" in response:
+        return response["result"]
+    elif "error_name" in response:
+        raise_message_exception(response["error_name"], response.get("error"))
+    else:
+        raise RemoteAPIError(response.get("error"))

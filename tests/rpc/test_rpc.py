@@ -10,7 +10,7 @@ from weavelib.messaging import WeaveConnection
 from weavelib.rpc import OneOf
 from weavelib.rpc import RPCClient, RPCServer, ServerAPI, get_rpc_caller
 from weavelib.rpc import ArgParameter, KeywordParameter, RemoteAPIError
-from weavelib.rpc import find_rpc
+from weavelib.rpc import find_rpc, extract_rpc_payload
 from weavelib.services import BaseService, MessagingEnabled
 
 from test_utils import MessagingService, DummyEnvService
@@ -184,14 +184,14 @@ class TestRPC(object):
         result = []
 
         def callback(res):
-            result.append(res)
+            result.append(extract_rpc_payload(res))
             event.set()
 
         client["api1"]("hello", 5, k3=False, _callback=callback)
 
         event.wait()
 
-        assert result[0]["result"] == "hello5False"
+        assert result[0] == "hello5False"
 
         client.stop()
 
@@ -219,6 +219,28 @@ class TestRPC(object):
             client["exception"](_block=True)
 
         client["exception"]()  # Exception is not visible.
+
+        client.stop()
+
+    def test_api_with_exception_callback(self):
+        info = self.service.rpc_server.info_message
+        client = RPCClient(self.conn, info, self.test_token)
+        client.start()
+
+
+        event = Event()
+        result = []
+
+        def callback(res):
+            result.append(res)
+            event.set()
+
+        client["exception"](_callback=callback)
+
+        event.wait()
+
+        with pytest.raises(RemoteAPIError):
+            extract_rpc_payload(result[0])
 
         client.stop()
 
