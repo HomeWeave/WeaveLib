@@ -1,4 +1,5 @@
 -e git+https://github.com/HomeWeave/WeaveServer.git#egg=weaveserver-0.8
+-e git+https://github.com/HomeWeave/WeaveHTTP.git#egg=weavehttp-0.8
 pytest
 coveralls
 pylint
