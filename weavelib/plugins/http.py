@@ -1,7 +1,8 @@
+import os
 from base64 import b64encode
 from threading import Event, Lock
 
-from weavelib.rpc import RPCClient, find_rpc
+from weavelib.rpc import RPCClient, find_rpc, extract_rpc_payload
 from weavelib.exceptions import WeaveException
 
 
@@ -43,11 +44,11 @@ class HTTPResourceRegistrationHelper(object):
                                      callback=callback)
 
     def register_directory(self, local_path, relative_http_url):
-        files = []
+        files_tuple = []
         for cur_folder, _, files in os.walk(local_path):
             for filename in files:
                 cur_file = os.path.join(cur_folder, filename)
-                files.append((cur_file, os.path.relpath(cur_file, local_path)))
+                files_tuple.append((cur_file, os.path.relpath(cur_file, local_path)))
 
         events = {}
         responses = {}
@@ -60,12 +61,13 @@ class HTTPResourceRegistrationHelper(object):
                 event.set()
             return callback
 
-        for abs_path, rel_path in files:
+        for abs_path, rel_path in files_tuple:
             cur_rel_http_url = os.path.join(relative_http_url, rel_path)
             event = Event()
             events[rel_path] = event
             callback = make_callback(rel_path, event)
-            self.register_file(abs_path, cur_rel_http_url, _callback=callback)
+            self.register_file(abs_path, cur_rel_http_url, block=False,
+                               callback=callback)
 
         base_rel_url = None
         for rel_path, event in events.items():

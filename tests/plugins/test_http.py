@@ -83,3 +83,18 @@ class TestHTTPResourceRegistrationHelper(object):
         assert requests.get(self.HTTP_URL + url).text == "test"
 
         self.dummy_service.http_helper.unregister_url("/test")
+
+    def test_register_directory(self, tmpdir):
+        dirs = [tmpdir.mkdir("dir-" + str(x)) for x in range(2)]
+        files = ["file-" + str(x) for x in range(3)]
+        for directory in dirs:
+            for filename in files:
+                directory.join(filename).write(str(files.index(filename)))
+
+        url = self.dummy_service.http_helper.register_directory(str(tmpdir),
+                                                                "/dir")
+        base_url = self.HTTP_URL + url
+        for directory in dirs:
+            for filename in files:
+                cur = base_url + "/" + directory.basename + "/" + filename
+                assert requests.get(cur).text == str(files.index(filename))
