@@ -83,6 +83,7 @@ class TestHTTPResourceRegistrationHelper(object):
         assert requests.get(self.HTTP_URL + url).text == "test"
 
         self.dummy_service.http_helper.unregister_url("/test")
+        assert requests.get(self.HTTP_URL + url).status_code == 404
 
     def test_register_directory(self, tmpdir):
         dirs = [tmpdir.mkdir("dir-" + str(x)) for x in range(2)]
