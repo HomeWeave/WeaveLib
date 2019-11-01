@@ -78,8 +78,6 @@ class HTTPResourceRegistrationHelper(object):
             if base_rel_url is None and rel_url.endswith(rel_path):
                 base_rel_url = rel_url[:-len(rel_path)]
 
-
-
         return base_rel_url
 
     def unregister_url(self, url, block=True, callback=None):

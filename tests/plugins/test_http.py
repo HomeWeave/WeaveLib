@@ -68,7 +68,6 @@ class TestHTTPResourceRegistrationHelper(object):
         cls.dummy_service.service_start()
         cls.dummy_service.wait_for_start(15)
 
-
     @classmethod
     def teardown_class(cls):
         cls.http.service_stop()
